@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "utils.h"
+
 struct list_menu *list_menu_new(const char *title)
 {
 	struct list_menu *menu = malloc(sizeof(*menu));
@@ -37,20 +39,13 @@ void list_menu_free(struct list_menu *menu)
 
 void list_menu_add_item(struct list_menu *menu, const char *item)
 {
-	char *item_copy = strdup(item);
-	if (item_copy == NULL)
+	char **new_item = GROW_ARRAY(menu->items, menu->item_count);
+	if (new_item == NULL)
 		return;
 
-	char **items = realloc(menu->items,
-			       sizeof(*menu->items)*(menu->item_count + 1));
-	if (items == NULL) {
-		free(item_copy);
-		return;
-	}
-
-	menu->items = items;
-	menu->items[menu->item_count] = item_copy;
-	++menu->item_count;
+	*new_item = strdup(item);
+	if (*new_item != NULL)
+		++menu->item_count;
 }
 
 void list_menu_draw(struct list_menu *menu, WINDOW *window)
