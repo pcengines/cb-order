@@ -1,10 +1,35 @@
 #include <curses.h>
 
-#include <unistd.h> /* sleep() */
-
+#include <stdarg.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
+#include "boot_order.h"
 #include "list_menu.h"
+
+#define ARRAY_SIZE(array) (sizeof(array)/sizeof((array)[0]))
+
+char *format_str(const char format[], ...) __attribute__ ((format(gnu_printf, 1, 2)));
+char *format_str(const char format[], ...)
+{
+	va_list ap;
+	va_list aq;
+	size_t len;
+	char *buf;
+
+	va_start(ap, format);
+	va_copy(aq, ap);
+
+	len = vsnprintf(NULL, 0, format, ap);
+	va_end(ap);
+
+	buf = malloc(len + 1);
+	if (buf != NULL)
+		(void)vsprintf(buf, format, aq);
+	va_end(aq);
+
+	return buf;
+}
 
 void run_boot_menu(WINDOW *menu_window)
 {
@@ -29,24 +54,18 @@ void run_boot_menu(WINDOW *menu_window)
 
 void run_options_menu(WINDOW *menu_window)
 {
+	int i;
 	struct list_menu *options_menu;
 
 	options_menu = list_menu_new("coreboot configuration :: options");
-	list_menu_add_item(options_menu, "(n)  Network/PXE boot");
-	list_menu_add_item(options_menu, "(u)  USB boot");
-	list_menu_add_item(options_menu, "(t)  Serial console");
-	list_menu_add_item(options_menu, "(k)  Redirect console output to COM2");
-	list_menu_add_item(options_menu, "(o)  UART C / GPIO[0..7]");
-	list_menu_add_item(options_menu, "(p)  UART D / GPIO[10..17]");
-	list_menu_add_item(options_menu, "(m)  Force mPCIe2 slot CLK (GPP3 PCIe)");
-	list_menu_add_item(options_menu, "(h)  EHCI0 controller");
-	list_menu_add_item(options_menu, "(l)  Core Performance Boost");
-	list_menu_add_item(options_menu, "(i)  Watchdog");
-	list_menu_add_item(options_menu, "(j)  SD 3.0 mode");
-	list_menu_add_item(options_menu, "(g)  Reverse order of PCI addresses");
-	list_menu_add_item(options_menu, "(v)  IOMMU");
-	list_menu_add_item(options_menu, "(y)  PCIe power management features");
-	list_menu_add_item(options_menu, "(w)  Enable BIOS write protect");
+
+	for(i = 0; i < (int)ARRAY_SIZE(OPTIONS); ++i) {
+		char *item = format_str("(%c)  %s",
+					OPTIONS[i].shortcut,
+					OPTIONS[i].description);
+		list_menu_add_item(options_menu, item);
+		free(item);
+	}
 
 	while (true) {
 		const int key = list_menu_run(options_menu, menu_window);
