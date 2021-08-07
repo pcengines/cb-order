@@ -27,9 +27,8 @@ void list_menu_free(struct list_menu *menu)
 {
 	int i;
 
-	for (i = 0; i < menu->item_count; ++i) {
+	for (i = 0; i < menu->item_count; ++i)
 		free(menu->items[i]);
-	}
 
 	free(menu->items);
 	free(menu->title);

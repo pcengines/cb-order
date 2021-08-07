@@ -16,9 +16,12 @@ struct option_def
 	const char *description;
 	char shortcut;
 	enum option_type type;
+};
 
-	bool bool_value;
-	int int_value;
+struct option
+{
+	const struct option_def *def;
+	int value;
 };
 
 struct boot_record
@@ -29,14 +32,17 @@ struct boot_record
 	char **devices;
 };
 
-struct boot_file
+struct boot_data
 {
 	int record_count;
 	struct boot_record *records;
 
 	int option_count;
-	struct option_def **options;
+	struct option **options;
 };
+
+struct boot_data *boot_data_new(void);
+void boot_data_free(struct boot_data *boot);
 
 static const struct option_def OPTIONS[] =
 {

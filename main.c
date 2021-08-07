@@ -31,7 +31,7 @@ char *format_str(const char format[], ...)
 	return buf;
 }
 
-void run_boot_menu(WINDOW *menu_window)
+void run_boot_menu(WINDOW *menu_window, struct boot_data *boot)
 {
 	struct list_menu *boot_menu;
 
@@ -52,7 +52,7 @@ void run_boot_menu(WINDOW *menu_window)
 	list_menu_free(boot_menu);
 }
 
-void run_options_menu(WINDOW *menu_window)
+void run_options_menu(WINDOW *menu_window, struct boot_data *boot)
 {
 	int i;
 	struct list_menu *options_menu;
@@ -76,7 +76,7 @@ void run_options_menu(WINDOW *menu_window)
 	list_menu_free(options_menu);
 }
 
-void run_main_menu(WINDOW *menu_window)
+void run_main_menu(WINDOW *menu_window, struct boot_data *boot)
 {
 	struct list_menu *main_menu;
 
@@ -92,10 +92,10 @@ void run_main_menu(WINDOW *menu_window)
 
 		switch (key) {
 			case 'b':
-				run_boot_menu(menu_window);
+				run_boot_menu(menu_window, boot);
 				break;
 			case 'o':
-				run_options_menu(menu_window);
+				run_options_menu(menu_window, boot);
 				break;
 		}
 	}
@@ -105,7 +105,10 @@ void run_main_menu(WINDOW *menu_window)
 
 int main(int argc, char **argv)
 {
+	struct boot_data *boot;
 	WINDOW *menu_window;
+
+	boot = boot_data_new();
 
 	initscr();
 	noecho();
@@ -114,11 +117,13 @@ int main(int argc, char **argv)
 	menu_window = newwin(getmaxy(stdscr), getmaxx(stdscr), 0, 0);
 	keypad(menu_window, true);
 
-	run_main_menu(menu_window);
+	run_main_menu(menu_window, boot);
 
 	delwin(menu_window);
 
 	endwin();
+
+	boot_data_free(boot);
 }
 
 /* vim: set ts=8 sts=8 sw=8 noet : */
