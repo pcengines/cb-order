@@ -10,6 +10,13 @@ enum option_type
 	OPT_TYPE_HEX4,
 };
 
+enum option_id
+{
+#define X(id_, keyword_, description_, shortcut_, type_) id_,
+#include "boot_options.inc"
+#undef X
+};
+
 struct option_def
 {
 	const char *keyword;
@@ -20,7 +27,7 @@ struct option_def
 
 struct option
 {
-	const struct option_def *def;
+	enum option_id id;
 	int value;
 };
 
@@ -38,7 +45,7 @@ struct boot_data
 	struct boot_record *records;
 
 	int option_count;
-	struct option **options;
+	struct option *options;
 };
 
 struct boot_data *boot_data_new(void);
@@ -46,7 +53,7 @@ void boot_data_free(struct boot_data *boot);
 
 static const struct option_def OPTIONS[] =
 {
-#define X(keyword_, description_, shortcut_, type_) \
+#define X(id_, keyword_, description_, shortcut_, type_) \
 	{ \
 		.keyword = (keyword_), \
 		.description = (description_), \

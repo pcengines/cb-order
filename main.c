@@ -59,10 +59,13 @@ void run_options_menu(WINDOW *menu_window, struct boot_data *boot)
 
 	options_menu = list_menu_new("coreboot configuration :: options");
 
-	for(i = 0; i < (int)ARRAY_SIZE(OPTIONS); ++i) {
+	for(i = 0; i < boot->option_count; ++i) {
+		const enum option_id id = boot->options[i].id;
+		const struct option_def *option = &OPTIONS[id];
+
 		char *item = format_str("(%c)  %s",
-					OPTIONS[i].shortcut,
-					OPTIONS[i].description);
+					option->shortcut,
+					option->description);
 		list_menu_add_item(options_menu, item);
 		free(item);
 	}
