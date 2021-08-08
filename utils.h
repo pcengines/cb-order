@@ -3,6 +3,8 @@
 
 #include <stdlib.h>
 
+#define ARRAY_SIZE(array) (sizeof(array)/sizeof((array)[0]))
+
 #define GROW_ARRAY(array, size) \
 	({ \
 		void *ptr = realloc((array), sizeof(*array)*((size) + 1)); \

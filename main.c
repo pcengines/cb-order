@@ -2,12 +2,11 @@
 
 #include <stdarg.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "boot_order.h"
 #include "list_menu.h"
-
-#define ARRAY_SIZE(array) (sizeof(array)/sizeof((array)[0]))
 
 char *format_str(const char format[], ...) __attribute__ ((format(gnu_printf, 1, 2)));
 char *format_str(const char format[], ...)
@@ -110,8 +109,11 @@ int main(int argc, char **argv)
 {
 	struct boot_data *boot;
 	WINDOW *menu_window;
+	FILE *file;
 
-	boot = boot_data_new();
+	file = fopen("bootorder", "r");
+	boot = boot_data_new(file);
+	fclose(file);
 
 	initscr();
 	noecho();

@@ -2,6 +2,7 @@
 #define BOOTORDER_H__
 
 #include <stdbool.h>
+#include <stdio.h>
 
 enum option_type
 {
@@ -48,7 +49,7 @@ struct boot_data
 	struct option *options;
 };
 
-struct boot_data *boot_data_new(void);
+struct boot_data *boot_data_new(FILE *file);
 void boot_data_free(struct boot_data *boot);
 
 static const struct option_def OPTIONS[] =
