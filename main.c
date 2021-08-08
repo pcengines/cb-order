@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "boot_order.h"
 #include "list_menu.h"
@@ -51,6 +52,35 @@ void run_boot_menu(WINDOW *menu_window, struct boot_data *boot)
 	list_menu_free(boot_menu);
 }
 
+static char *format_option_value(struct option *option)
+{
+	const enum option_id id = option->id;
+	const struct option_def *option_def = &OPTIONS[id];
+
+	char *value = NULL;
+	char *line = NULL;
+
+	switch (option_def->type) {
+		case OPT_TYPE_BOOLEAN:
+			value = strdup(option->value ? "on" : "off");
+			break;
+		case OPT_TYPE_TOGGLE:
+			value = strdup(option->value ? "first" : "second");
+			break;
+		case OPT_TYPE_HEX4:
+			value = format_str("%d", option->value);
+			break;
+	}
+
+	line = format_str("(%c)  [%6s]  %s",
+			  option_def->shortcut,
+			  value,
+			  option_def->description);
+
+	free(value);
+	return line;
+}
+
 void run_options_menu(WINDOW *menu_window, struct boot_data *boot)
 {
 	int i;
@@ -59,12 +89,7 @@ void run_options_menu(WINDOW *menu_window, struct boot_data *boot)
 	options_menu = list_menu_new("coreboot configuration :: options");
 
 	for(i = 0; i < boot->option_count; ++i) {
-		const enum option_id id = boot->options[i].id;
-		const struct option_def *option = &OPTIONS[id];
-
-		char *item = format_str("(%c)  %s",
-					option->shortcut,
-					option->description);
+		char *item = format_option_value(&boot->options[i]);
 		list_menu_add_item(options_menu, item);
 		free(item);
 	}
