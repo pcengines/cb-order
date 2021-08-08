@@ -40,14 +40,13 @@ static void boot_data_parse_option(struct boot_data *boot, const char *line)
 		const char *option_line = line;
 
 		int base;
-		char *past_value;
 		int value;
 
 		if (!skip_prefix(&option_line, option_def->keyword))
 			continue;
 
 		base = (option_def->type == OPT_TYPE_HEX4 ? 16 : 10);
-		value = strtol(option_line, &past_value, base);
+		value = strtol(option_line, NULL, base);
 		boot_data_add_option(boot, i, value);
 		return;
 	}
