@@ -54,8 +54,7 @@ void run_boot_menu(WINDOW *menu_window, struct boot_data *boot)
 
 static char *format_option_value(struct option *option)
 {
-	const enum option_id id = option->id;
-	const struct option_def *option_def = &OPTIONS[id];
+	const struct option_def *option_def = &OPTIONS[option->id];
 
 	char *value = NULL;
 	char *line = NULL;
@@ -81,23 +80,68 @@ static char *format_option_value(struct option *option)
 	return line;
 }
 
-void run_options_menu(WINDOW *menu_window, struct boot_data *boot)
+static void make_options_menu(struct list_menu *menu, struct boot_data *boot)
 {
 	int i;
-	struct list_menu *options_menu;
 
-	options_menu = list_menu_new("coreboot configuration :: options");
+	list_menu_clear(menu);
 
 	for(i = 0; i < boot->option_count; ++i) {
 		char *item = format_option_value(&boot->options[i]);
-		list_menu_add_item(options_menu, item);
+		list_menu_add_item(menu, item);
 		free(item);
 	}
+}
+
+static void toggle_option(struct option *option)
+{
+	const struct option_def *option_def = &OPTIONS[option->id];
+
+	if (option_def->type != OPT_TYPE_HEX4) {
+		option->value = !option->value;
+		return;
+	}
+
+	if (option->value != 0) {
+		option->value = 0;
+		return;
+	}
+
+	// TODO: prompt user for a new value
+}
+
+void run_options_menu(WINDOW *menu_window, struct boot_data *boot)
+{
+	struct list_menu *options_menu;
+
+	options_menu = list_menu_new("coreboot configuration :: options");
+	make_options_menu(options_menu, boot);
 
 	while (true) {
+		int i;
+
 		const int key = list_menu_run(options_menu, menu_window);
 		if (key == 'q')
 			break;
+
+		if (key == ' ') {
+			toggle_option(&boot->options[options_menu->current]);
+			make_options_menu(options_menu, boot);
+			continue;
+		}
+
+		for (i = 0; i < boot->option_count; ++i) {
+			struct option *option = &boot->options[i];
+			const enum option_id id = option->id;
+			const struct option_def *option_def = &OPTIONS[id];
+
+			if (option_def->shortcut == key) {
+				toggle_option(option);
+				make_options_menu(options_menu, boot);
+				list_menu_goto(options_menu, i);
+				break;
+			}
+		}
 	}
 
 	list_menu_free(options_menu);

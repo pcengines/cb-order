@@ -27,12 +27,8 @@ struct list_menu *list_menu_new(const char *title)
 
 void list_menu_free(struct list_menu *menu)
 {
-	int i;
+	list_menu_clear(menu);
 
-	for (i = 0; i < menu->item_count; ++i)
-		free(menu->items[i]);
-
-	free(menu->items);
 	free(menu->title);
 	free(menu);
 }
@@ -46,6 +42,25 @@ void list_menu_add_item(struct list_menu *menu, const char *item)
 	*new_item = strdup(item);
 	if (*new_item != NULL)
 		++menu->item_count;
+}
+
+void list_menu_clear(struct list_menu *menu)
+{
+	int i;
+
+	for (i = 0; i < menu->item_count; ++i)
+		free(menu->items[i]);
+
+	free(menu->items);
+
+	menu->items = NULL;
+	menu->item_count = 0;
+}
+
+void list_menu_goto(struct list_menu *menu, int index)
+{
+	if (index >= 0 && index < menu->item_count)
+		menu->current = index;
 }
 
 void list_menu_draw(struct list_menu *menu, WINDOW *window)

@@ -28,6 +28,7 @@ struct option_def
 
 struct option
 {
+	// TODO: maybe use a pointer to option_def
 	enum option_id id;
 	int value;
 };
