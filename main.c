@@ -50,15 +50,21 @@ void run_main_menu(WINDOW *menu_window, struct boot_data *boot)
 	list_menu_add_item(main_menu, "(q)  Exit");
 
 	while (true) {
-		const int key = list_menu_run(main_menu, menu_window);
+		int key = list_menu_run(main_menu, menu_window);
+
+		if (key == '\n')
+			key = "boq"[main_menu->current];
+
 		if (key == ERR || key == 'q')
 			break;
 
 		switch (key) {
 			case 'b':
+				list_menu_goto(main_menu, 0);
 				run_boot_menu(menu_window, boot);
 				break;
 			case 'o':
+				list_menu_goto(main_menu, 1);
 				options_menu_run(menu_window, boot);
 				break;
 		}
