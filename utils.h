@@ -1,6 +1,7 @@
 #ifndef UTILS_H__
 #define UTILS_H__
 
+#include <stdbool.h>
 #include <stdlib.h>
 
 #define ARRAY_SIZE(array) (sizeof(array)/sizeof((array)[0]))
@@ -16,6 +17,8 @@
 
 char *format_str(const char format[], ...)
 	__attribute__ ((format(gnu_printf, 1, 2)));
+
+bool skip_prefix(const char **str, const char *prefix);
 
 #endif // UTILS_H__
 

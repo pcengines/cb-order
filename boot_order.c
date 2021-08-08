@@ -7,16 +7,6 @@
 
 #include "utils.h"
 
-static bool skip_prefix(const char **str, const char *prefix)
-{
-	const size_t prefix_len = strlen(prefix);
-	if (strncmp(*str, prefix, prefix_len) == 0) {
-		*str += prefix_len;
-		return true;
-	}
-	return false;
-}
-
 static void boot_data_add_device(struct boot_record *record, const char *device)
 {
 	char **new_device = GROW_ARRAY(record->devices, record->device_count);
