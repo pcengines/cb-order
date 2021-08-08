@@ -6,18 +6,30 @@
 #include "boot_order.h"
 #include "list_menu.h"
 #include "options.h"
+#include "utils.h"
+
+static void make_boot_menu(struct list_menu *menu, struct boot_data *boot)
+{
+	int i;
+
+	list_menu_clear(menu);
+
+	for (i = 0; i < boot->record_count; ++i) {
+		char *item = format_str("(%c)  %s",
+					'a' + i,
+					boot->records[i].name);
+		list_menu_add_item(menu, item);
+		free(item);
+	}
+}
 
 void run_boot_menu(WINDOW *menu_window, struct boot_data *boot)
 {
 	struct list_menu *boot_menu;
 
 	boot_menu = list_menu_new("coreboot configuration :: boot order");
-	list_menu_add_item(boot_menu, "(a)  USB");
-	list_menu_add_item(boot_menu, "(b)  SDCARD");
-	list_menu_add_item(boot_menu, "(c)  mSATA");
-	list_menu_add_item(boot_menu, "(d)  SATA");
-	list_menu_add_item(boot_menu, "(e)  mPCIe1 SATA1 and SATA2");
-	list_menu_add_item(boot_menu, "(f)  iPXE");
+
+	make_boot_menu(boot_menu, boot);
 
 	while (true) {
 		const int key = list_menu_run(boot_menu, menu_window);
@@ -59,11 +71,14 @@ int main(int argc, char **argv)
 {
 	struct boot_data *boot;
 	WINDOW *menu_window;
-	FILE *file;
+	FILE *boot_file;
+	FILE *map_file;
 
-	file = fopen("bootorder", "r");
-	boot = boot_data_new(file);
-	fclose(file);
+	boot_file = fopen("bootorder", "r");
+	map_file = fopen("bootorder_map", "r");
+	boot = boot_data_new(boot_file, map_file);
+	fclose(map_file);
+	fclose(boot_file);
 
 	initscr();
 	noecho();

@@ -6,7 +6,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,28 +22,6 @@ static struct
 	WINDOW *window;
 } 
 prompt_data;
-
-static char *format_str(const char format[], ...) __attribute__ ((format(gnu_printf, 1, 2)));
-static char *format_str(const char format[], ...)
-{
-	va_list ap;
-	va_list aq;
-	size_t len;
-	char *buf;
-
-	va_start(ap, format);
-	va_copy(aq, ap);
-
-	len = vsnprintf(NULL, 0, format, ap);
-	va_end(ap);
-
-	buf = malloc(len + 1);
-	if (buf != NULL)
-		(void)vsprintf(buf, format, aq);
-	va_end(aq);
-
-	return buf;
-}
 
 static char *format_option_value(struct option *option)
 {

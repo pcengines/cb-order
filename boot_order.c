@@ -17,6 +17,36 @@ static bool skip_prefix(const char **str, const char *prefix)
 	return false;
 }
 
+static void boot_data_add_device(struct boot_record *record, const char *device)
+{
+	char **new_device = GROW_ARRAY(record->devices, record->device_count);
+	if (new_device == NULL)
+		return;
+
+	*new_device = strdup(device);
+	if (*new_device == NULL)
+		return;
+
+	++record->device_count;
+}
+
+static void boot_data_add_record(struct boot_data *boot, const char *name)
+{
+	struct boot_record *new_record = GROW_ARRAY(boot->records,
+						    boot->record_count);
+	if (new_record == NULL)
+		return;
+
+	new_record->name = strdup(name);
+	if (new_record->name == NULL)
+		return;
+
+	new_record->device_count = 0;
+	new_record->devices = NULL;
+
+	++boot->record_count;
+}
+
 static void boot_data_add_option(struct boot_data *boot,
 				 enum option_id id,
 				 int value)
@@ -54,18 +84,89 @@ static void boot_data_parse_option(struct boot_data *boot, const char *line)
 	fprintf(stderr, "Failed to parse option line: %s", line);
 }
 
-static void boot_data_parse(struct boot_data *boot, FILE *file)
+static void boot_data_parse_map(struct boot_data *boot,
+				FILE *map_file,
+				char *record_sizes)
 {
 	char *line = NULL;
 	size_t len = 0;
 	ssize_t read;
 
-	while ((read = getline(&line, &len, file)) != -1) {
+	char last_record = '\0';
+
+	while ((read = getline(&line, &len, map_file)) != -1) {
+		size_t line_len = strlen(line);
+
+		if (line_len == 0)
+			break;
+
+		if (line[line_len - 1] == '\n')
+			--line_len;
+		if (line_len > 0 && line[line_len - 2] == '\n')
+			--line_len;
+		line[line_len - 1] = '\0';
+
+		if (line_len < 3) {
+			fprintf(stderr, "Ignoring invalid map line: %s\n",
+				line);
+			continue;
+		}
+
+		if (line[0] != last_record) {
+			if (boot->record_count == MAX_BOOT_RECORDS) {
+				fprintf(stderr,
+					"Ignoring excess records starting "
+					"with: %s\n",
+					line);
+				break;
+			}
+
+			boot_data_add_record(boot, line + 2);
+			last_record = line[0];
+		}
+
+		++record_sizes[boot->record_count - 1];
+	}
+
+	free(line);
+}
+
+static void boot_data_parse(struct boot_data *boot,
+			    FILE *boot_file,
+			    FILE *map_file)
+{
+	char *line = NULL;
+	size_t len = 0;
+	ssize_t read;
+
+	char record_sizes[MAX_BOOT_RECORDS] = {0};
+	int current_record = 0;
+
+	boot_data_parse_map(boot, map_file, record_sizes);
+
+	while ((read = getline(&line, &len, boot_file)) != -1) {
+		struct boot_record *record;
+
 		if (line[0] == '\0')
 			break;
 
-		if (line[0] != '/')
+		if (line[0] != '/') {
 			boot_data_parse_option(boot, line);
+			continue;
+		}
+
+		if (current_record == boot->record_count) {
+			fprintf(stderr,
+				"Ignoring invalid boot line (invalid map?): %s",
+				line);
+			break;
+		}
+
+		record = &boot->records[current_record];
+		boot_data_add_device(record, line);
+
+		if (record->device_count == record_sizes[current_record])
+			++current_record;
 	}
 
 	free(line);
@@ -86,7 +187,7 @@ static void boot_data_add_missing_options(struct boot_data *boot)
 	}
 }
 
-struct boot_data *boot_data_new(FILE *file)
+struct boot_data *boot_data_new(FILE *boot_file, FILE *map_file)
 {
 	struct boot_data *boot = malloc(sizeof(*boot));
 
@@ -95,7 +196,7 @@ struct boot_data *boot_data_new(FILE *file)
 	boot->option_count = 0;
 	boot->options = NULL;
 
-	boot_data_parse(boot, file);
+	boot_data_parse(boot, boot_file, map_file);
 	boot_data_add_missing_options(boot);
 
 	return boot;
@@ -114,7 +215,6 @@ void boot_data_free(struct boot_data *boot)
 
 		free(record->devices);
 		free(record->name);
-		free(record);
 	}
 
 	free(boot->options);

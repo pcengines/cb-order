@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#define MAX_BOOT_RECORDS 64
+
 enum option_type
 {
 	OPT_TYPE_BOOLEAN,
@@ -50,7 +52,7 @@ struct boot_data
 	struct option *options;
 };
 
-struct boot_data *boot_data_new(FILE *file);
+struct boot_data *boot_data_new(FILE *boot_file, FILE *map_file);
 void boot_data_free(struct boot_data *boot);
 
 static const struct option_def OPTIONS[] =
