@@ -33,7 +33,7 @@ void run_boot_menu(WINDOW *menu_window, struct boot_data *boot)
 
 	while (true) {
 		const int key = list_menu_run(boot_menu, menu_window);
-		if (key == 'q')
+		if (key == ERR || key == 'q')
 			break;
 	}
 
@@ -51,7 +51,7 @@ void run_main_menu(WINDOW *menu_window, struct boot_data *boot)
 
 	while (true) {
 		const int key = list_menu_run(main_menu, menu_window);
-		if (key == 'q')
+		if (key == ERR || key == 'q')
 			break;
 
 		switch (key) {

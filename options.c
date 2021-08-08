@@ -193,7 +193,7 @@ void options_menu_run(WINDOW *menu_window, struct boot_data *boot)
 		int i;
 
 		const int key = list_menu_run(options_menu, menu_window);
-		if (key == 'q')
+		if (key == ERR || key == 'q')
 			break;
 
 		if (key == ' ') {
