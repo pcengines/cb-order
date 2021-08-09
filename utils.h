@@ -2,6 +2,7 @@
 #define UTILS_H__
 
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -42,6 +43,8 @@ char *format_str(const char format[], ...)
 	__attribute__ ((format(gnu_printf, 1, 2)));
 
 bool skip_prefix(const char **str, const char *prefix);
+
+FILE *temp_file(char *template);
 
 #endif // UTILS_H__
 

@@ -1,5 +1,8 @@
 #include "utils.h"
 
+#include <unistd.h>
+
+#include <errno.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -35,6 +38,28 @@ bool skip_prefix(const char **str, const char *prefix)
 		return true;
 	}
 	return false;
+}
+
+FILE *temp_file(char *template)
+{
+	int fd;
+	FILE *file;
+
+	fd = mkstemp(template);
+	if (fd == -1) {
+		fprintf(stderr,
+			"Failed to create a temporary file: %s\n",
+			strerror(errno));
+		return NULL;
+	}
+
+	file = fdopen(fd, "r+");
+	if (file == NULL) {
+		(void)unlink(template);
+		return NULL;
+	}
+
+	return file;
 }
 
 /* vim: set ts=8 sts=8 sw=8 noet : */

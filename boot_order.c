@@ -71,7 +71,7 @@ static void boot_data_parse_option(struct boot_data *boot, const char *line)
 		return;
 	}
 
-	fprintf(stderr, "Failed to parse option line: %s", line);
+	fprintf(stderr, "Failed to parse option line: %s\n", line);
 }
 
 static void strip(char *line)

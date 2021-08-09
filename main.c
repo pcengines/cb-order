@@ -1,5 +1,10 @@
 #include <curses.h>
 
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -57,11 +62,17 @@ void run_boot_menu(WINDOW *menu_window, struct boot_data *boot)
 	list_menu_free(boot_menu);
 }
 
-void run_main_menu(WINDOW *menu_window, struct boot_data *boot)
+void run_main_menu(WINDOW *menu_window,
+		   struct boot_data *boot,
+		   const char *rom_file)
 {
 	struct list_menu *main_menu;
+	char *title;
 
-	main_menu = list_menu_new("coreboot configuration");
+	title = format_str("coreboot configuration :: %s", rom_file);
+	main_menu = list_menu_new(title);
+	free(title);
+
 	list_menu_add_item(main_menu, "(b)  Edit boot order");
 	list_menu_add_item(main_menu, "(o)  Edit options");
 	list_menu_add_item(main_menu, "(q)  Exit");
@@ -140,30 +151,6 @@ static bool fclose_wrapper(FILE *file, const char *path)
 	return file;
 }
 
-static struct boot_data *load_boot_data(const char *boot_file_path,
-					const char *map_file_path)
-{
-	FILE *boot_file;
-	FILE *map_file;
-	struct boot_data *boot;
-
-	boot_file = fopen_wrapper(boot_file_path, "r");
-	if (boot_file == NULL)
-		return NULL;
-
-	map_file = fopen_wrapper(map_file_path, "r");
-	if (map_file == NULL) {
-		fclose_wrapper(boot_file, boot_file_path);
-		return NULL;
-	}
-
-	boot = boot_data_new(boot_file, map_file);
-
-	fclose_wrapper(boot_file, boot_file_path);
-	fclose_wrapper(map_file, map_file_path);
-	return boot;
-}
-
 static bool store_boot_data(struct boot_data *boot,
 			    const char *boot_def_file_path,
 			    const char *boot_file_path,
@@ -197,16 +184,167 @@ static bool store_boot_data(struct boot_data *boot,
 	return true;
 }
 
+static void run_from_fork(int pipe[2], char **argv)
+{
+	int null_fd;
+
+	/* Close read end of the pipe. */
+	(void)close(pipe[0]);
+
+	/* Redirect output stream to write end of the pipe */
+	if (dup2(pipe[1], STDERR_FILENO) == -1)
+		_Exit(EXIT_FAILURE);
+	if (dup2(pipe[1], STDOUT_FILENO) == -1)
+		_Exit(EXIT_FAILURE);
+
+	if (pipe[1] != STDERR_FILENO && pipe[1] != STDOUT_FILENO)
+		/* Close write end of the pipe after it was duplicated */
+		(void)close(pipe[1]);
+
+	null_fd = open("/dev/null", O_RDWR);
+	if (null_fd == -1)
+		_Exit(EXIT_FAILURE);
+
+	if (dup2(null_fd, STDIN_FILENO) == -1)
+		_Exit(EXIT_FAILURE);
+
+	if (null_fd != STDIN_FILENO && null_fd != STDOUT_FILENO)
+		(void)close(null_fd);
+
+	execvp(argv[0], argv);
+	_Exit(127);
+}
+
+static int child_wait(pid_t pid)
+{
+	while (true) {
+		int status;
+		if (waitpid(pid, &status, 0) == -1) {
+			if (errno == EINTR)
+				continue;
+			break;
+		}
+
+		if (WIFEXITED(status) || WIFSIGNALED(status))
+			return status;
+	}
+
+	return -1;
+}
+
+static bool run_cmd(char **argv)
+{
+	FILE *file;
+	pid_t pid;
+	int out_pipe[2];
+
+	char *line = NULL;
+	size_t len = 0;
+	ssize_t read;
+
+	int exit_code;
+
+	if (pipe(out_pipe) != 0)
+		return false;
+
+	pid = fork();
+	if (pid == (pid_t)-1)
+		return false;
+
+	if (pid == 0) {
+		run_from_fork(out_pipe, argv);
+		return false;
+	}
+
+	/* Close write end of pipe. */
+	close(out_pipe[1]);
+
+	file = fdopen(out_pipe[0], "r");
+	if (file == NULL)
+		close(out_pipe[0]);
+
+	while ((read = getline(&line, &len, file)) != -1)
+		printf("%s: %s", argv[0], line);
+	free(line);
+
+	fclose(file);
+
+	exit_code = child_wait(pid);
+	if (exit_code == -1) {
+		fprintf(stderr, "Waiting for %s has failed", argv[0]);
+		return false;
+	}
+
+	return (exit_code == EXIT_SUCCESS);
+}
+
+static FILE *extract_file(const char *rom_file, const char *name)
+{
+	FILE *file;
+	char template[] = "/tmp/cb-order.XXXXXX";
+	char *argv[] = {
+		"cbfstool", (char *)rom_file, "extract",
+		"-n", (char *)name,
+		"-f", template,
+		NULL
+	};
+
+	file = temp_file(template);
+	if (file == NULL)
+		return NULL;
+
+	if (!run_cmd(argv)) {
+		(void)fclose(file);
+		fprintf(stderr,
+			"Failed to extract %s from %s\n",
+			name, rom_file);
+		return NULL;
+	}
+
+	return file;
+}
+
+static struct boot_data *load_boot_data(const char *rom_file)
+{
+	FILE *boot_file;
+	FILE *map_file;
+	struct boot_data *boot;
+
+	boot_file = extract_file(rom_file, "bootorder_def");
+	if (boot_file == NULL)
+		return NULL;
+	map_file = extract_file(rom_file, "bootorder_map");
+	if (map_file == NULL) {
+		(void)fclose(boot_file);
+		return NULL;
+	}
+
+	boot = boot_data_new(boot_file, map_file);
+
+	fclose(boot_file);
+	fclose(map_file);
+
+	return boot;
+}
+
 int main(int argc, char **argv)
 {
+	const char *rom_file;
 	struct boot_data *boot;
 	WINDOW *menu_window;
 	bool success;
 
-	boot = load_boot_data("bootorder", "bootorder_map");
+	if (argc != 2) {
+		fprintf(stderr, "Invocation: %s <rom-file>\n", argv[0]);
+		return EXIT_FAILURE;
+	}
+
+	rom_file = argv[1];
+
+	boot = load_boot_data(rom_file);
 	if (boot == NULL) {
 		fprintf(stderr, "Failed to read boot data\n");
-		return 1;
+		return EXIT_FAILURE;
 	}
 
 	initscr();
@@ -216,7 +354,7 @@ int main(int argc, char **argv)
 	menu_window = newwin(getmaxy(stdscr), getmaxx(stdscr), 0, 0);
 	keypad(menu_window, true);
 
-	run_main_menu(menu_window, boot);
+	run_main_menu(menu_window, boot, rom_file);
 
 	delwin(menu_window);
 
@@ -229,7 +367,7 @@ int main(int argc, char **argv)
 
 	boot_data_free(boot);
 
-	return (success ? 0 : 1);
+	return (success ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
 /* vim: set ts=8 sts=8 sw=8 noet : */
