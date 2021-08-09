@@ -1,6 +1,6 @@
 // X(id, keyword, description, shortcut, type)
 
-X(PXEN, "pxen", "Network/PXE boot", 'n', OPT_TYPE_BOOLEAN)
+X(PXEN, "pxen", "Network (PXE boot)", 'n', OPT_TYPE_BOOLEAN)
 X(USBEN, "usben", "USB boot", 'u', OPT_TYPE_BOOLEAN)
 X(SCON, "scon", "Serial console", 't', OPT_TYPE_BOOLEAN)
 X(COM2EN, "com2en", "Redirect console output to COM2", 'k', OPT_TYPE_BOOLEAN)
