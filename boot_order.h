@@ -55,6 +55,9 @@ struct boot_data
 struct boot_data *boot_data_new(FILE *boot_file, FILE *map_file);
 void boot_data_free(struct boot_data *boot);
 
+void boot_data_dump_boot(struct boot_data *boot, FILE *file);
+void boot_data_dump_map(struct boot_data *boot, FILE *file);
+
 static const struct option_def OPTIONS[] =
 {
 #define X(id_, keyword_, description_, shortcut_, type_) \

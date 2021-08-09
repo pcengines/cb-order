@@ -74,6 +74,17 @@ static void boot_data_parse_option(struct boot_data *boot, const char *line)
 	fprintf(stderr, "Failed to parse option line: %s", line);
 }
 
+static void strip(char *line)
+{
+	size_t line_len = strlen(line);
+
+	if (line_len > 0 && line[line_len - 1] == '\n')
+		--line_len;
+	if (line_len > 0 && line[line_len - 1] == '\r')
+		--line_len;
+	line[line_len] = '\0';
+}
+
 static void boot_data_parse_map(struct boot_data *boot,
 				FILE *map_file,
 				char *record_sizes)
@@ -85,18 +96,11 @@ static void boot_data_parse_map(struct boot_data *boot,
 	char last_record = '\0';
 
 	while ((read = getline(&line, &len, map_file)) != -1) {
-		size_t line_len = strlen(line);
-
-		if (line_len == 0)
+		if (line[0] == '\0')
 			break;
 
-		if (line[line_len - 1] == '\n')
-			--line_len;
-		if (line_len > 0 && line[line_len - 2] == '\n')
-			--line_len;
-		line[line_len - 1] = '\0';
-
-		if (line_len < 3) {
+		strip(line);
+		if (strlen(line) < 3) {
 			fprintf(stderr, "Ignoring invalid map line: %s\n",
 				line);
 			continue;
@@ -140,6 +144,7 @@ static void boot_data_parse(struct boot_data *boot,
 		if (line[0] == '\0')
 			break;
 
+		strip(line);
 		if (line[0] != '/') {
 			boot_data_parse_option(boot, line);
 			continue;
@@ -209,6 +214,44 @@ void boot_data_free(struct boot_data *boot)
 
 	free(boot->options);
 	free(boot);
+}
+
+void boot_data_dump_boot(struct boot_data *boot, FILE *file)
+{
+	int i;
+
+	for (i = 0; i < boot->record_count; ++i) {
+		int j;
+		for (j = 0; j < boot->records[i].device_count; ++j)
+			fprintf(file, "%s\r\n", boot->records[i].devices[j]);
+	}
+
+	for (i = 0; i < boot->option_count; ++i) {
+		struct option *option = &boot->options[i];
+		const enum option_id id = option->id;
+		const struct option_def *option_def = &OPTIONS[id];
+
+		if (option_def->type == OPT_TYPE_HEX4)
+			fprintf(file, "%s%04x\r\n",
+				option_def->keyword,
+				boot->options[i].value);
+		else
+			fprintf(file, "%s%d\r\n",
+				option_def->keyword,
+				boot->options[i].value);
+	}
+}
+
+void boot_data_dump_map(struct boot_data *boot, FILE *file)
+{
+	int i;
+	for (i = 0; i < boot->record_count; ++i) {
+		int j;
+		for (j = 0; j < boot->records[i].device_count; ++j)
+			fprintf(file, "%c %s\r\n",
+				'a' + i,
+				boot->records[i].name);
+	}
 }
 
 /* vim: set ts=8 sts=8 sw=8 noet : */
