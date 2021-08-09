@@ -1,8 +1,5 @@
 #include <curses.h>
 
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <fcntl.h>
 #include <unistd.h>
 
 #include <errno.h>
@@ -152,130 +149,80 @@ static bool fclose_wrapper(FILE *file, const char *path)
 }
 
 static bool store_boot_data(struct boot_data *boot,
+			    const char *rom_file,
 			    const char *boot_def_file_path,
 			    const char *boot_file_path,
 			    const char *map_file_path)
 {
 	FILE *file;
 	bool success;
+	char template[] = "/tmp/cb-order.XXXXXX";
+	char name[] = "bootorder_def";
+	char *add_argv[] = {
+		"cbfstool", (char *)rom_file, "add",
+		"-t", "raw",
+		"-n", name,
+		"-a", "0x1000",
+		"-f", template,
+		NULL
+	};
+	char *remove_argv[] = {
+		"cbfstool", (char *)rom_file, "remove",
+		"-n", name,
+		NULL
+	};
+	char *bootorder_argv[] = {
+		"cbfstool", (char *)rom_file, "write",
+		"-r", "BOOTORDER",
+		"-f", template,
+		NULL
+	};
 
-	file = fopen_wrapper(boot_def_file_path, "w");
-	if (file == NULL)
+	file = temp_file(template);
+	if (file == NULL) {
+		fprintf(stderr,
+			"Failed to create a temporary file: %s\n",
+			strerror(errno));
 		return false;
+	}
+
 	boot_data_dump_boot(boot, file);
-	if (!fclose_wrapper(file, boot_def_file_path))
-		return false;
+	if (!fclose_wrapper(file, template))
+		goto failure;
+	if (!run_cmd(remove_argv))
+		goto failure;
+	if (!run_cmd(add_argv))
+		goto failure;
 
-	file = fopen_wrapper(boot_file_path, "w");
+	file = fopen_wrapper(template, "w");
 	if (file == NULL)
-		return false;
+		goto failure;
 	boot_data_dump_boot(boot, file);
 	success = pad_file(file);
-	if (!fclose_wrapper(file, boot_file_path) || !success)
-		return false;
+	if (!fclose_wrapper(file, template) || !success)
+		goto failure;
+	if (!run_cmd(bootorder_argv))
+		goto failure;
 
-	file = fopen_wrapper(map_file_path, "w");
+	strcpy(name, "bootorder_map");
+
+	file = fopen_wrapper(template, "w");
 	if (file == NULL)
-		return false;
+		goto failure;
 	boot_data_dump_map(boot, file);
-	if (!fclose_wrapper(file, map_file_path))
-		return false;
+	if (!fclose_wrapper(file, template))
+		goto failure;
+	if (!run_cmd(remove_argv))
+		goto failure;
+	if (!run_cmd(add_argv))
+		goto failure;
 
+	(void)unlink(template);
 	return true;
-}
 
-static void run_from_fork(int pipe[2], char **argv)
-{
-	int null_fd;
-
-	/* Close read end of the pipe. */
-	(void)close(pipe[0]);
-
-	/* Redirect output stream to write end of the pipe */
-	if (dup2(pipe[1], STDERR_FILENO) == -1)
-		_Exit(EXIT_FAILURE);
-	if (dup2(pipe[1], STDOUT_FILENO) == -1)
-		_Exit(EXIT_FAILURE);
-
-	if (pipe[1] != STDERR_FILENO && pipe[1] != STDOUT_FILENO)
-		/* Close write end of the pipe after it was duplicated */
-		(void)close(pipe[1]);
-
-	null_fd = open("/dev/null", O_RDWR);
-	if (null_fd == -1)
-		_Exit(EXIT_FAILURE);
-
-	if (dup2(null_fd, STDIN_FILENO) == -1)
-		_Exit(EXIT_FAILURE);
-
-	if (null_fd != STDIN_FILENO && null_fd != STDOUT_FILENO)
-		(void)close(null_fd);
-
-	execvp(argv[0], argv);
-	_Exit(127);
-}
-
-static int child_wait(pid_t pid)
-{
-	while (true) {
-		int status;
-		if (waitpid(pid, &status, 0) == -1) {
-			if (errno == EINTR)
-				continue;
-			break;
-		}
-
-		if (WIFEXITED(status) || WIFSIGNALED(status))
-			return status;
-	}
-
-	return -1;
-}
-
-static bool run_cmd(char **argv)
-{
-	FILE *file;
-	pid_t pid;
-	int out_pipe[2];
-
-	char *line = NULL;
-	size_t len = 0;
-	ssize_t read;
-
-	int exit_code;
-
-	if (pipe(out_pipe) != 0)
-		return false;
-
-	pid = fork();
-	if (pid == (pid_t)-1)
-		return false;
-
-	if (pid == 0) {
-		run_from_fork(out_pipe, argv);
-		return false;
-	}
-
-	/* Close write end of pipe. */
-	close(out_pipe[1]);
-
-	file = fdopen(out_pipe[0], "r");
-	if (file == NULL)
-		close(out_pipe[0]);
-
-	while ((read = getline(&line, &len, file)) != -1)
-		printf("%s: %s", argv[0], line);
-	free(line);
-
-	fclose(file);
-
-	exit_code = child_wait(pid);
-	if (exit_code == -1) {
-		fprintf(stderr, "Waiting for %s has failed", argv[0]);
-		return false;
-	}
-
-	return (exit_code == EXIT_SUCCESS);
+failure:
+	(void)unlink(template);
+	return false;
 }
 
 static FILE *extract_file(const char *rom_file, const char *name)
@@ -290,17 +237,24 @@ static FILE *extract_file(const char *rom_file, const char *name)
 	};
 
 	file = temp_file(template);
-	if (file == NULL)
+	if (file == NULL) {
+		fprintf(stderr,
+			"Failed to create a temporary file: %s\n",
+			strerror(errno));
 		return NULL;
+	}
 
 	if (!run_cmd(argv)) {
 		(void)fclose(file);
+		(void)unlink(template);
+
 		fprintf(stderr,
 			"Failed to extract %s from %s\n",
 			name, rom_file);
 		return NULL;
 	}
 
+	(void)unlink(template);
 	return file;
 }
 
@@ -361,6 +315,7 @@ int main(int argc, char **argv)
 	endwin();
 
 	success = store_boot_data(boot,
+				  rom_file,
 				  "bootorder_out",
 				  "bootorder_bin_out",
 				  "bootorder_map_out");

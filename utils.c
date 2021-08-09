@@ -1,5 +1,8 @@
 #include "utils.h"
 
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <fcntl.h>
 #include <unistd.h>
 
 #include <errno.h>
@@ -46,12 +49,8 @@ FILE *temp_file(char *template)
 	FILE *file;
 
 	fd = mkstemp(template);
-	if (fd == -1) {
-		fprintf(stderr,
-			"Failed to create a temporary file: %s\n",
-			strerror(errno));
+	if (fd == -1)
 		return NULL;
-	}
 
 	file = fdopen(fd, "r+");
 	if (file == NULL) {
@@ -60,6 +59,100 @@ FILE *temp_file(char *template)
 	}
 
 	return file;
+}
+
+static void fork_main(int pipe[2], char **argv)
+{
+	int null_fd;
+
+	/* Close read end of the pipe. */
+	(void)close(pipe[0]);
+
+	/* Redirect output stream to write end of the pipe */
+	if (dup2(pipe[1], STDERR_FILENO) == -1)
+		_Exit(EXIT_FAILURE);
+	if (dup2(pipe[1], STDOUT_FILENO) == -1)
+		_Exit(EXIT_FAILURE);
+
+	if (pipe[1] != STDERR_FILENO && pipe[1] != STDOUT_FILENO)
+		/* Close write end of the pipe after it was duplicated */
+		(void)close(pipe[1]);
+
+	null_fd = open("/dev/null", O_RDWR);
+	if (null_fd == -1)
+		_Exit(EXIT_FAILURE);
+
+	if (dup2(null_fd, STDIN_FILENO) == -1)
+		_Exit(EXIT_FAILURE);
+
+	if (null_fd != STDIN_FILENO && null_fd != STDOUT_FILENO)
+		(void)close(null_fd);
+
+	execvp(argv[0], argv);
+	_Exit(127);
+}
+
+static int child_wait(pid_t pid)
+{
+	while (true) {
+		int status;
+		if (waitpid(pid, &status, 0) == -1) {
+			if (errno == EINTR)
+				continue;
+			break;
+		}
+
+		if (WIFEXITED(status) || WIFSIGNALED(status))
+			return status;
+	}
+
+	return -1;
+}
+
+bool run_cmd(char **argv)
+{
+	FILE *file;
+	pid_t pid;
+	int out_pipe[2];
+
+	char *line = NULL;
+	size_t len = 0;
+	ssize_t read;
+
+	int exit_code;
+
+	if (pipe(out_pipe) != 0)
+		return false;
+
+	pid = fork();
+	if (pid == (pid_t)-1)
+		return false;
+
+	if (pid == 0) {
+		fork_main(out_pipe, argv);
+		return false;
+	}
+
+	/* Close write end of pipe. */
+	close(out_pipe[1]);
+
+	file = fdopen(out_pipe[0], "r");
+	if (file == NULL)
+		close(out_pipe[0]);
+
+	while ((read = getline(&line, &len, file)) != -1)
+		printf("%s: %s", argv[0], line);
+	free(line);
+
+	fclose(file);
+
+	exit_code = child_wait(pid);
+	if (exit_code == -1) {
+		fprintf(stderr, "Waiting for %s has failed", argv[0]);
+		return false;
+	}
+
+	return (exit_code == EXIT_SUCCESS);
 }
 
 /* vim: set ts=8 sts=8 sw=8 noet : */
