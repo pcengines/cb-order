@@ -82,7 +82,7 @@ static void run_ui(const char *rom_file, struct boot_data *boot)
 	endwin();
 }
 
-static bool run_batch(const struct args *args, struct boot_data *boot)
+static bool batch_reorder(const struct args *args, struct boot_data *boot)
 {
 	int target = 0;
 	char *ptr;
@@ -113,6 +113,91 @@ static bool run_batch(const struct args *args, struct boot_data *boot)
 	free(boot_order);
 
 	return (token == NULL);
+}
+
+static bool set_option(struct option *option, const char *str_value)
+{
+	int int_value;
+	const struct option_def *option_def = &OPTIONS[option->id];
+
+	switch (option_def->type) {
+		case OPT_TYPE_BOOLEAN:
+			if (strcmp(str_value, "on") == 0)
+				int_value = 1;
+			else if (strcmp(str_value, "off") == 0)
+				int_value = 0;
+			else
+				return false;
+			break;
+		case OPT_TYPE_TOGGLE:
+			if (strcmp(str_value, "first") == 0)
+				int_value = 0;
+			else if (strcmp(str_value, "second") == 0)
+				int_value = 1;
+			else
+				return false;
+			break;
+		case OPT_TYPE_HEX4:
+			int_value = strtol(str_value, NULL, 10);
+			break;
+	}
+
+	return boot_data_set_option(option, int_value);
+}
+
+static bool batch_set_options(const struct args *args, struct boot_data *boot)
+{
+	int i;
+
+	for (i = 0; i < args->boot_option_count; ++i) {
+		int n;
+		size_t j;
+
+		char *name = NULL;
+		char *value = NULL;
+
+		n = sscanf(args->boot_options[i], "%m[^=]=%ms", &name, &value);
+		if (n != 2) {
+			free(name);
+			free(value);
+			fprintf(stderr, "Unrecognized option setting: %s\n",
+				args->boot_options[i]);
+			break;
+		}
+
+		for (j = 0; j < boot->option_count; ++j) {
+			const enum option_id id = boot->options[j].id;
+			const struct option_def *option_def = &OPTIONS[id];
+			if (strcmp(option_def->keyword, name) == 0) {
+				break;
+			}
+		}
+
+		if (j == ARRAY_SIZE(OPTIONS)) {
+			fprintf(stderr, "Unrecognized option: %s\n", name);
+			free(name);
+			break;
+		}
+
+		if (!set_option(&boot->options[j], value)) {
+			fprintf(stderr, "Invalid value for %s option: %s\n",
+				name, value);
+			free(value);
+			free(name);
+			break;
+		}
+
+		free(value);
+		free(name);
+	}
+
+	return (i == args->boot_option_count);
+}
+
+static bool run_batch(const struct args *args, struct boot_data *boot)
+{
+	return batch_reorder(args, boot) &&
+	       batch_set_options(args, boot);
 }
 
 static void print_help(const char *command)
