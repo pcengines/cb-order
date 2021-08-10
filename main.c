@@ -37,30 +37,30 @@ void run_main_menu(WINDOW *menu_window,
 	main_menu = list_menu_new(title);
 	free(title);
 
-	list_menu_add_item(main_menu, "(b)  Edit boot order");
-	list_menu_add_item(main_menu, "(o)  Edit options");
-	list_menu_add_item(main_menu, "(s)  Save & Exit");
-	list_menu_add_item(main_menu, "(x)  Exit");
+	list_menu_add_item(main_menu, "(B)  Edit boot order");
+	list_menu_add_item(main_menu, "(O)  Edit options");
+	list_menu_add_item(main_menu, "(S)  Save & Exit");
+	list_menu_add_item(main_menu, "(X)  Exit");
 
 	*save = false;
 
 	while (true) {
 		int key = list_menu_run(main_menu, menu_window);
 
-		if (key == '\n')
-			key = "bosx"[main_menu->current];
+		if (key == '\n' || key == 'l')
+			key = "BOSX"[main_menu->current];
 
-		if (key == ERR || key == 'x' || key == 's') {
+		if (key == ERR || key == 'X' || key == 'S') {
 			*save = (key == 's');
 			break;
 		}
 
 		switch (key) {
-			case 'b':
+			case 'B':
 				list_menu_goto(main_menu, 0);
 				records_menu_run(menu_window, boot);
 				break;
-			case 'o':
+			case 'O':
 				list_menu_goto(main_menu, 1);
 				options_menu_run(menu_window, boot);
 				break;

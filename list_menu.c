@@ -105,9 +105,11 @@ int list_menu_run(struct list_menu *menu, WINDOW *window)
 
 		key = wgetch(window);
 		switch (key) {
+			case 'k':
 			case KEY_UP:
 				list_menu_go_up(menu);
 				break;
+			case 'j':
 			case KEY_DOWN:
 				list_menu_go_down(menu);
 				break;

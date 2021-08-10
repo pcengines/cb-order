@@ -16,7 +16,7 @@ static void make_records_menu(struct list_menu *menu, struct boot_data *boot)
 
 	for (i = 0; i < boot->record_count; ++i) {
 		char *item = format_str("(%c)  %s",
-					'a' + i,
+					'A' + i,
 					boot->records[i].name);
 		list_menu_add_item(menu, item);
 		free(item);
@@ -33,11 +33,11 @@ void records_menu_run(WINDOW *menu_window, struct boot_data *boot)
 
 	while (true) {
 		const int key = list_menu_run(boot_menu, menu_window);
-		if (key == ERR || key == 'q')
+		if (key == ERR || key == 'q' || key == 'h')
 			break;
 
-		if (key >= 'a' && key < 'a' + boot->record_count) {
-			const int item = key - 'a';
+		if (key >= 'A' && key < 'A' + boot->record_count) {
+			const int item = key - 'A';
 			const int line = boot_menu->current;
 
 			boot_data_move(boot, item, line);
