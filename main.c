@@ -4,6 +4,7 @@
 
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "boot_order.h"
 #include "cbfs.h"
@@ -81,9 +82,37 @@ static void run_ui(const char *rom_file, struct boot_data *boot)
 	endwin();
 }
 
-static void run_batch(const struct args *args, struct boot_data *boot)
+static bool run_batch(const struct args *args, struct boot_data *boot)
 {
+	int target = 0;
+	char *ptr;
+	const char *token;
+	char *boot_order;
 
+	if (args->boot_order == NULL)
+		return true;
+
+	boot_order = strdup(args->boot_order);
+
+	for (ptr = boot_order; (token = strtok(ptr, ",")) != NULL; ptr = NULL) {
+		int i;
+		for (i = 0; i < boot->record_count; ++i) {
+			if (strcmp(boot->records[i].name, token) == 0) {
+				boot_data_move(boot, i, target++);
+				break;
+			}
+		}
+
+		if (i == boot->record_count) {
+			fprintf(stderr, "Unrecognized boot record name: %s\n",
+				token);
+			break;
+		}
+	}
+
+	free(boot_order);
+
+	return (token == NULL);
 }
 
 static void print_help(const char *command)
@@ -171,7 +200,7 @@ static const struct args *parse_args(int argc, char **argv)
 int main(int argc, char **argv)
 {
 	struct boot_data *boot;
-	bool success;
+	bool success = true;
 
 	const struct args *args = parse_args(argc, argv);
 
@@ -184,9 +213,9 @@ int main(int argc, char **argv)
 	if (args->interactive)
 		run_ui(args->rom_file, boot);
 	else
-		run_batch(args, boot);
+		success = run_batch(args, boot);
 
-	success = cbfs_store_boot_data(boot, args->rom_file);
+	success = success && cbfs_store_boot_data(boot, args->rom_file);
 
 	boot_data_free(boot);
 
