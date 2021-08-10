@@ -20,10 +20,10 @@ static struct
 	const char *description;
 	const char *initial;
 	WINDOW *window;
-} 
+}
 prompt_data;
 
-static char *format_option_value(struct option *option)
+static char *format_option_item(struct option *option)
 {
 	const struct option_def *option_def = &OPTIONS[option->id];
 
@@ -42,8 +42,9 @@ static char *format_option_value(struct option *option)
 			break;
 	}
 
-	line = format_str("(%c)  [%6s]  %s",
+	line = format_str("(%c)  [%-11s = %6s]  %s",
 			  option_def->shortcut,
+			  option_def->keyword,
 			  value,
 			  option_def->description);
 
@@ -58,7 +59,7 @@ static void make_options_menu(struct list_menu *menu, struct boot_data *boot)
 	list_menu_clear(menu);
 
 	for (i = 0; i < boot->option_count; ++i) {
-		char *item = format_option_value(&boot->options[i]);
+		char *item = format_option_item(&boot->options[i]);
 		list_menu_add_item(menu, item);
 		free(item);
 	}
@@ -192,7 +193,7 @@ void options_menu_run(WINDOW *menu_window, struct boot_data *boot)
 		if (key == ERR || key == 'q')
 			break;
 
-		if (key == ' ') {
+		if (key == ' ' || key == '\n') {
 			toggle_option(&boot->options[options_menu->current],
 				      menu_window);
 			make_options_menu(options_menu, boot);
