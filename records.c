@@ -40,12 +40,7 @@ void records_menu_run(WINDOW *menu_window, struct boot_data *boot)
 			const int item = key - 'a';
 			const int line = boot_menu->current;
 
-			if (item >= line)
-				ROTATE_RIGHT(&boot->records[line],
-					     item - line + 1);
-			else
-				ROTATE_LEFT(&boot->records[item],
-					    line - item + 1);
+			boot_data_move(boot, item, line);
 
 			make_records_menu(boot_menu, boot);
 			list_menu_goto(boot_menu, line + 1);

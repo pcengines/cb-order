@@ -216,6 +216,19 @@ void boot_data_free(struct boot_data *boot)
 	free(boot);
 }
 
+void boot_data_move(struct boot_data *boot, int from, int to)
+{
+	if (from < 0 || from >= boot->record_count)
+		return;
+	if (to < 0 || to >= boot->record_count)
+		return;
+
+	if (from >= to)
+		ROTATE_RIGHT(&boot->records[to], from - to + 1);
+	else
+		ROTATE_LEFT(&boot->records[from], to - from + 1);
+}
+
 void boot_data_dump_boot(struct boot_data *boot, FILE *file)
 {
 	int i;
