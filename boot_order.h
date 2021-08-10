@@ -56,6 +56,7 @@ struct boot_data *boot_data_new(FILE *boot_file, FILE *map_file);
 void boot_data_free(struct boot_data *boot);
 
 void boot_data_move(struct boot_data *boot, int from, int to);
+bool boot_data_set_option(struct option *option, int value);
 
 void boot_data_dump_boot(struct boot_data *boot, FILE *file);
 void boot_data_dump_map(struct boot_data *boot, FILE *file);

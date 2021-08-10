@@ -229,6 +229,21 @@ void boot_data_move(struct boot_data *boot, int from, int to)
 		ROTATE_LEFT(&boot->records[from], to - from + 1);
 }
 
+bool boot_data_set_option(struct option *option, int value)
+{
+	const struct option_def *option_def = &OPTIONS[option->id];
+	if (option_def->type != OPT_TYPE_HEX4) {
+		option->value = (value != 0);
+		return true;
+	}
+
+	if (value < 0 || value > 0xffff)
+		return false;
+
+	option->value = value;
+	return true;
+}
+
 void boot_data_dump_boot(struct boot_data *boot, FILE *file)
 {
 	int i;

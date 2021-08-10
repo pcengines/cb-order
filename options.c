@@ -174,12 +174,8 @@ static void toggle_option(struct option *option, WINDOW *window)
 			  "Range: [0; 65535]", "New value: ", "");
 	free(title);
 
-	option->value = strtol(input, NULL, 10);
-
+	(void)boot_data_set_option(option, strtol(input, NULL, 10));
 	free(input);
-
-	if (option->value < 0 || option->value > 0xffff)
-		option->value = 0;
 }
 
 void options_menu_run(WINDOW *menu_window, struct boot_data *boot)
