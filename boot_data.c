@@ -37,9 +37,7 @@ static void boot_data_add_record(struct boot_data *boot, const char *name)
 	++boot->record_count;
 }
 
-static void boot_data_add_option(struct boot_data *boot,
-				 enum option_id id,
-				 int value)
+static void boot_data_add_option(struct boot_data *boot, int id, int value)
 {
 	struct option *new_option = GROW_ARRAY(boot->options,
 					       boot->option_count);
@@ -255,8 +253,7 @@ void boot_data_dump_boot(struct boot_data *boot, FILE *file)
 	}
 
 	for (i = 0; i < boot->option_count; ++i) {
-		struct option *option = &boot->options[i];
-		const enum option_id id = option->id;
+		const int id = boot->options[i].id;
 		const struct option_def *option_def = &OPTIONS[id];
 
 		if (option_def->type == OPT_TYPE_HEX4)

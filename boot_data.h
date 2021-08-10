@@ -13,13 +13,6 @@ enum option_type
 	OPT_TYPE_HEX4,
 };
 
-enum option_id
-{
-#define X(id_, keyword_, description_, shortcut_, type_) id_,
-#include "boot_options.inc"
-#undef X
-};
-
 struct option_def
 {
 	const char *keyword;
@@ -31,7 +24,7 @@ struct option_def
 struct option
 {
 	// TODO: maybe use a pointer to option_def
-	enum option_id id;
+	int id;
 	int value;
 };
 
@@ -63,7 +56,7 @@ void boot_data_dump_map(struct boot_data *boot, FILE *file);
 
 static const struct option_def OPTIONS[] =
 {
-#define X(id_, keyword_, description_, shortcut_, type_) \
+#define X(keyword_, description_, shortcut_, type_) \
 	{ \
 		.keyword = (keyword_), \
 		.description = (description_), \

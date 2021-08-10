@@ -166,7 +166,7 @@ static bool batch_set_options(const struct args *args, struct boot_data *boot)
 		}
 
 		for (j = 0; j < boot->option_count; ++j) {
-			const enum option_id id = boot->options[j].id;
+			const int id = boot->options[j].id;
 			const struct option_def *option_def = &OPTIONS[id];
 			if (strcmp(option_def->keyword, name) == 0) {
 				break;

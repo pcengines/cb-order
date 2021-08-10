@@ -202,7 +202,7 @@ void options_menu_run(WINDOW *menu_window, struct boot_data *boot)
 
 		for (i = 0; i < boot->option_count; ++i) {
 			struct option *option = &boot->options[i];
-			const enum option_id id = option->id;
+			const int id = option->id;
 			const struct option_def *option_def = &OPTIONS[id];
 
 			if (option_def->shortcut == key) {
