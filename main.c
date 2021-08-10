@@ -9,55 +9,9 @@
 
 #include "boot_order.h"
 #include "list_menu.h"
+#include "records.h"
 #include "options.h"
 #include "utils.h"
-
-static void make_boot_menu(struct list_menu *menu, struct boot_data *boot)
-{
-	int i;
-
-	list_menu_clear(menu);
-
-	for (i = 0; i < boot->record_count; ++i) {
-		char *item = format_str("(%c)  %s",
-					'a' + i,
-					boot->records[i].name);
-		list_menu_add_item(menu, item);
-		free(item);
-	}
-}
-
-void run_boot_menu(WINDOW *menu_window, struct boot_data *boot)
-{
-	struct list_menu *boot_menu;
-
-	boot_menu = list_menu_new("coreboot configuration :: boot order");
-
-	make_boot_menu(boot_menu, boot);
-
-	while (true) {
-		const int key = list_menu_run(boot_menu, menu_window);
-		if (key == ERR || key == 'q')
-			break;
-
-		if (key >= 'a' && key < 'a' + boot->record_count) {
-			const int item = key - 'a';
-			const int line = boot_menu->current;
-
-			if (item >= line)
-				ROTATE_RIGHT(&boot->records[line],
-					     item - line + 1);
-			else
-				ROTATE_LEFT(&boot->records[item],
-					    line - item + 1);
-
-			make_boot_menu(boot_menu, boot);
-			list_menu_goto(boot_menu, line + 1);
-		}
-	}
-
-	list_menu_free(boot_menu);
-}
 
 void run_main_menu(WINDOW *menu_window,
 		   struct boot_data *boot,
@@ -86,7 +40,7 @@ void run_main_menu(WINDOW *menu_window,
 		switch (key) {
 			case 'b':
 				list_menu_goto(main_menu, 0);
-				run_boot_menu(menu_window, boot);
+				records_menu_run(menu_window, boot);
 				break;
 			case 'o':
 				list_menu_goto(main_menu, 1);
