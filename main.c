@@ -1,5 +1,7 @@
 #include <curses.h>
 
+#include <unistd.h>
+
 #include <stdbool.h>
 #include <stdio.h>
 
@@ -9,6 +11,18 @@
 #include "records.h"
 #include "options.h"
 #include "utils.h"
+
+struct args
+{
+	const char *rom_file;
+	const char *boot_order;
+	const char **boot_options;
+	int boot_option_count;
+	bool interactive;
+};
+
+static const char *USAGE_FMT = "Usage: %s [-b boot-source,...] "
+					 "[-o option=value] [-h]\n";
 
 void run_main_menu(WINDOW *menu_window,
 		   struct boot_data *boot,
@@ -67,28 +81,112 @@ static void run_ui(const char *rom_file, struct boot_data *boot)
 	endwin();
 }
 
+static void run_batch(const struct args *args, struct boot_data *boot)
+{
+
+}
+
+static void print_help(const char *command)
+{
+	size_t i;
+
+	printf(USAGE_FMT, command);
+
+	printf("\n");
+	printf("boot-source is a value from a boot order list.\n");
+	printf("\n");
+	printf("Recognized options and possible values:\n");
+
+	for (i = 0; i < ARRAY_SIZE(OPTIONS); ++i) {
+		const struct option_def *option_def = &OPTIONS[i];
+		printf("  %s\n", option_def->keyword);
+		printf("    %s\n", option_def->description);
+
+		switch (option_def->type) {
+			case OPT_TYPE_BOOLEAN:
+				printf("    on/off\n");
+				break;
+			case OPT_TYPE_TOGGLE:
+				printf("    first/second\n");
+				break;
+			case OPT_TYPE_HEX4:
+				printf("    [0; 65535]\n");
+				break;
+		}
+	}
+}
+
+static const struct args *parse_args(int argc, char **argv)
+{
+	static struct args args;
+
+	int opt;
+
+	while ((opt = getopt(argc, argv, "-hb:o:")) != -1) {
+		switch (opt) {
+			const char **option;
+
+			case 'b':
+				args.boot_order = optarg;
+				break;
+			case 'h':
+				print_help(argv[0]);
+				exit(EXIT_SUCCESS);
+			case 'o':
+				option = GROW_ARRAY(args.boot_options,
+						    args.boot_option_count);
+				if (option != NULL) {
+					*option = optarg;
+					++args.boot_option_count;
+				}
+				break;
+
+			case 1: /* positional argument */
+				if (args.rom_file != NULL) {
+					fprintf(stderr, "Excess positional "
+							"argument: %s\n",
+						argv[optind - 1]);
+					exit(EXIT_FAILURE);
+				}
+				args.rom_file = argv[optind - 1];
+				break;
+
+			case '?': /* parsing error */
+				fprintf(stderr, USAGE_FMT, argv[0]);
+				exit(EXIT_FAILURE);
+		}
+	}
+
+	if (args.rom_file == NULL) {
+		fprintf(stderr, USAGE_FMT, argv[0]);
+		exit(EXIT_FAILURE);
+	}
+
+	args.interactive = (args.boot_order == NULL) &&
+			   (args.boot_option_count == 0);
+
+	return &args;
+}
+
 int main(int argc, char **argv)
 {
-	const char *rom_file;
 	struct boot_data *boot;
 	bool success;
 
-	if (argc != 2) {
-		fprintf(stderr, "Invocation: %s <rom-file>\n", argv[0]);
-		return EXIT_FAILURE;
-	}
+	const struct args *args = parse_args(argc, argv);
 
-	rom_file = argv[1];
-
-	boot = cbfs_load_boot_data(rom_file);
+	boot = cbfs_load_boot_data(args->rom_file);
 	if (boot == NULL) {
 		fprintf(stderr, "Failed to read boot data\n");
 		return EXIT_FAILURE;
 	}
 
-	run_ui(rom_file, boot);
+	if (args->interactive)
+		run_ui(args->rom_file, boot);
+	else
+		run_batch(args, boot);
 
-	success = cbfs_store_boot_data(boot, rom_file);
+	success = cbfs_store_boot_data(boot, args->rom_file);
 
 	boot_data_free(boot);
 
