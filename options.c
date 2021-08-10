@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "boot_order.h"
+#include "boot_data.h"
 #include "list_menu.h"
 #include "utils.h"
 

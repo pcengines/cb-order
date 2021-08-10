@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "boot_order.h"
+#include "boot_data.h"
 #include "cbfs.h"
 #include "list_menu.h"
 #include "records.h"

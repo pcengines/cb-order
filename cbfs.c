@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#include "boot_order.h"
+#include "boot_data.h"
 #include "utils.h"
 
 #define BOOTORDER_REGION "BOOTORDER"

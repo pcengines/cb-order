@@ -1,5 +1,5 @@
-#ifndef BOOTORDER_H__
-#define BOOTORDER_H__
+#ifndef BOOT_DATA_H__
+#define BOOT_DATA_H__
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -74,6 +74,6 @@ static const struct option_def OPTIONS[] =
 #undef X
 };
 
-#endif // BOOTORDER_H__
+#endif // BOOT_DATA_H__
 
 /* vim: set ts=8 sts=8 sw=8 noet : */

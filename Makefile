@@ -1,3 +1,2 @@
-sortbootorder: main.c list_menu.c boot_order.c options.c utils.c records.c \
-			   cbfs.c
+sortbootorder: main.c list_menu.c boot_data.c options.c utils.c records.c cbfs.c
 	$(CC) -o $@ -Werror -g $^ -lcurses -lreadline
