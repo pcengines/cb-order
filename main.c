@@ -27,7 +27,8 @@ static const char *USAGE_FMT = "Usage: %s [-b boot-source,...] "
 
 void run_main_menu(WINDOW *menu_window,
 		   struct boot_data *boot,
-		   const char *rom_file)
+		   const char *rom_file,
+		   bool *save)
 {
 	struct list_menu *main_menu;
 	char *title;
@@ -38,16 +39,21 @@ void run_main_menu(WINDOW *menu_window,
 
 	list_menu_add_item(main_menu, "(b)  Edit boot order");
 	list_menu_add_item(main_menu, "(o)  Edit options");
-	list_menu_add_item(main_menu, "(q)  Exit");
+	list_menu_add_item(main_menu, "(s)  Save & Exit");
+	list_menu_add_item(main_menu, "(x)  Exit");
+
+	*save = false;
 
 	while (true) {
 		int key = list_menu_run(main_menu, menu_window);
 
 		if (key == '\n')
-			key = "boq"[main_menu->current];
+			key = "bosx"[main_menu->current];
 
-		if (key == ERR || key == 'q')
+		if (key == ERR || key == 'x' || key == 's') {
+			*save = (key == 's');
 			break;
+		}
 
 		switch (key) {
 			case 'b':
@@ -64,9 +70,10 @@ void run_main_menu(WINDOW *menu_window,
 	list_menu_free(main_menu);
 }
 
-static void run_ui(const char *rom_file, struct boot_data *boot)
+static bool run_ui(const char *rom_file, struct boot_data *boot)
 {
 	WINDOW *menu_window;
+	bool save;
 
 	initscr();
 	noecho();
@@ -75,11 +82,17 @@ static void run_ui(const char *rom_file, struct boot_data *boot)
 	menu_window = newwin(getmaxy(stdscr), getmaxx(stdscr), 0, 0);
 	keypad(menu_window, true);
 
-	run_main_menu(menu_window, boot, rom_file);
+	run_main_menu(menu_window, boot, rom_file, &save);
 
 	delwin(menu_window);
 
 	endwin();
+
+	/* Saving is performed after UI is turned off */
+	if (save)
+		return cbfs_store_boot_data(boot, rom_file);
+
+	return true;
 }
 
 static bool batch_reorder(const struct args *args, struct boot_data *boot)
@@ -197,7 +210,8 @@ static bool batch_set_options(const struct args *args, struct boot_data *boot)
 static bool run_batch(const struct args *args, struct boot_data *boot)
 {
 	return batch_reorder(args, boot) &&
-	       batch_set_options(args, boot);
+	       batch_set_options(args, boot) &&
+	       cbfs_store_boot_data(boot, args->rom_file);
 }
 
 static void print_help(const char *command)
@@ -285,7 +299,7 @@ static const struct args *parse_args(int argc, char **argv)
 int main(int argc, char **argv)
 {
 	struct boot_data *boot;
-	bool success = true;
+	bool success;
 
 	const struct args *args = parse_args(argc, argv);
 
@@ -296,11 +310,9 @@ int main(int argc, char **argv)
 	}
 
 	if (args->interactive)
-		run_ui(args->rom_file, boot);
+		success = run_ui(args->rom_file, boot);
 	else
 		success = run_batch(args, boot);
-
-	success = success && cbfs_store_boot_data(boot, args->rom_file);
 
 	boot_data_free(boot);
 
