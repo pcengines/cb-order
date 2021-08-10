@@ -84,18 +84,6 @@ void list_menu_draw(struct list_menu *menu, WINDOW *window)
 	wrefresh(window);
 }
 
-static void list_menu_go_up(struct list_menu *menu)
-{
-	if (menu->current > 0)
-		--menu->current;
-}
-
-static void list_menu_go_down(struct list_menu *menu)
-{
-	if (menu->current < menu->item_count - 1)
-		++menu->current;
-}
-
 int list_menu_run(struct list_menu *menu, WINDOW *window)
 {
 	while (true) {
@@ -107,11 +95,21 @@ int list_menu_run(struct list_menu *menu, WINDOW *window)
 		switch (key) {
 			case 'k':
 			case KEY_UP:
-				list_menu_go_up(menu);
+				if (menu->current > 0)
+					--menu->current;
 				break;
 			case 'j':
 			case KEY_DOWN:
-				list_menu_go_down(menu);
+				if (menu->current < menu->item_count - 1)
+					++menu->current;
+				break;
+			case 'g':
+			case KEY_HOME:
+				menu->current = 0;
+				break;
+			case KEY_END:
+				if (menu->item_count > 0)
+					menu->current = menu->item_count - 1;
 				break;
 			default:
 				return key;
