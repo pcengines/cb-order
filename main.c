@@ -102,11 +102,7 @@ static bool fclose_wrapper(FILE *file, const char *path)
 	return file;
 }
 
-static bool store_boot_data(struct boot_data *boot,
-			    const char *rom_file,
-			    const char *boot_def_file_path,
-			    const char *boot_file_path,
-			    const char *map_file_path)
+static bool store_boot_data(struct boot_data *boot, const char *rom_file)
 {
 	FILE *file;
 	bool success;
@@ -268,11 +264,7 @@ int main(int argc, char **argv)
 
 	endwin();
 
-	success = store_boot_data(boot,
-				  rom_file,
-				  "bootorder_out",
-				  "bootorder_bin_out",
-				  "bootorder_map_out");
+	success = store_boot_data(boot, rom_file);
 
 	boot_data_free(boot);
 
