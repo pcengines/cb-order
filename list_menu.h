@@ -3,6 +3,8 @@
 
 #include <curses.h>
 
+#define CONTROL(key) ((key) & 0x1f)
+
 struct list_menu
 {
 	char *title;

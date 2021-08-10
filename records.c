@@ -44,6 +44,18 @@ void records_menu_run(WINDOW *menu_window, struct boot_data *boot)
 
 			make_records_menu(boot_menu, boot);
 			list_menu_goto(boot_menu, line + 1);
+		} else if (key == KEY_PPAGE || key == CONTROL('p')) {
+			boot_data_move(boot,
+				       boot_menu->current,
+				       boot_menu->current - 1);
+			make_records_menu(boot_menu, boot);
+			list_menu_goto(boot_menu, boot_menu->current - 1);
+		} else if (key == KEY_NPAGE || key == CONTROL('n')) {
+			boot_data_move(boot,
+				       boot_menu->current,
+				       boot_menu->current + 1);
+			make_records_menu(boot_menu, boot);
+			list_menu_goto(boot_menu, boot_menu->current + 1);
 		}
 	}
 
