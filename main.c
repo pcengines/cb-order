@@ -49,11 +49,28 @@ void run_main_menu(WINDOW *menu_window,
 	list_menu_free(main_menu);
 }
 
+static void run_ui(const char *rom_file, struct boot_data *boot)
+{
+	WINDOW *menu_window;
+
+	initscr();
+	noecho();
+	curs_set(false);
+
+	menu_window = newwin(getmaxy(stdscr), getmaxx(stdscr), 0, 0);
+	keypad(menu_window, true);
+
+	run_main_menu(menu_window, boot, rom_file);
+
+	delwin(menu_window);
+
+	endwin();
+}
+
 int main(int argc, char **argv)
 {
 	const char *rom_file;
 	struct boot_data *boot;
-	WINDOW *menu_window;
 	bool success;
 
 	if (argc != 2) {
@@ -69,18 +86,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	initscr();
-	noecho();
-	curs_set(false);
-
-	menu_window = newwin(getmaxy(stdscr), getmaxx(stdscr), 0, 0);
-	keypad(menu_window, true);
-
-	run_main_menu(menu_window, boot, rom_file);
-
-	delwin(menu_window);
-
-	endwin();
+	run_ui(rom_file, boot);
 
 	success = cbfs_store_boot_data(boot, rom_file);
 
