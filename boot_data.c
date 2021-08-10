@@ -52,9 +52,10 @@ static void boot_data_add_option(struct boot_data *boot, int id, int value)
 
 static void boot_data_parse_option(struct boot_data *boot, const char *line)
 {
-	size_t i;
-	for (i = 0; i < ARRAY_SIZE(OPTIONS); ++i) {
-		const struct option_def *option_def = &OPTIONS[i];
+	int i;
+	for (i = 0; i < boot->option_count; ++i) {
+		struct option *option = &boot->options[i];
+		const struct option_def *option_def = &OPTIONS[option->id];
 		const char *option_line = line;
 
 		int base;
@@ -64,8 +65,7 @@ static void boot_data_parse_option(struct boot_data *boot, const char *line)
 			continue;
 
 		base = (option_def->type == OPT_TYPE_HEX4 ? 16 : 10);
-		value = strtol(option_line, NULL, base);
-		boot_data_add_option(boot, i, value);
+		option->value = strtol(option_line, NULL, base);
 		return;
 	}
 
@@ -165,23 +165,9 @@ static void boot_data_parse(struct boot_data *boot,
 	free(line);
 }
 
-static void boot_data_add_missing_options(struct boot_data *boot)
-{
-	size_t i;
-	for (i = 0; i < ARRAY_SIZE(OPTIONS); ++i) {
-		int j;
-		for (j = 0; j < boot->option_count; ++j) {
-			if (boot->options[j].id == i)
-				break;
-		}
-
-		if (j == boot->option_count)
-			boot_data_add_option(boot, i, /*value=*/0);
-	}
-}
-
 struct boot_data *boot_data_new(FILE *boot_file, FILE *map_file)
 {
+	size_t i;
 	struct boot_data *boot = malloc(sizeof(*boot));
 
 	boot->record_count = 0;
@@ -189,8 +175,10 @@ struct boot_data *boot_data_new(FILE *boot_file, FILE *map_file)
 	boot->option_count = 0;
 	boot->options = NULL;
 
+	for (i = 0; i < ARRAY_SIZE(OPTIONS); ++i)
+		boot_data_add_option(boot, i, /*value=*/0);
+
 	boot_data_parse(boot, boot_file, map_file);
-	boot_data_add_missing_options(boot);
 
 	return boot;
 }
