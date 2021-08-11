@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later */
+
 #include "ui_options.h"
 
 #include <curses.h>

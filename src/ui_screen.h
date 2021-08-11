@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later */
+
 #ifndef UI_SCREEN_H__
 #define UI_SCREEN_H__
 

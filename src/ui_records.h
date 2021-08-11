@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later */
+
 #ifndef UI_RECORDS_H__
 #define UI_RECORDS_H__
 

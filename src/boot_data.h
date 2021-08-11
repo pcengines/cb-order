@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later */
+
 #ifndef BOOT_DATA_H__
 #define BOOT_DATA_H__
 

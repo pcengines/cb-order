@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later */
+
 #ifndef UI_OPTIONS_H__
 #define UI_OPTIONS_H__
 

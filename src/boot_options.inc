@@ -1,4 +1,6 @@
-// X(keyword, description, shortcut, type)
+/* SPDX-License-Identifier: GPL-2.0-or-later */
+
+/* X(keyword, description, shortcut, type) */
 
 X("boosten", "Core Performance Boost", 'L', OPT_TYPE_BOOLEAN)
 X("com2en", "Redirect console output to COM2", 'K', OPT_TYPE_BOOLEAN)
