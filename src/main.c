@@ -36,7 +36,7 @@ static bool run_ui(const struct args *args, struct boot_data *boot)
 
 	initscr();
 	noecho();
-	curs_set(false);
+	curs_set(0);
 
 	window = newwin(getmaxy(stdscr), getmaxx(stdscr), 0, 0);
 	keypad(window, true);
