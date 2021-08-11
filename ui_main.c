@@ -38,7 +38,7 @@ void main_run(WINDOW *window,
 			key = "BOSX"[screen->current];
 
 		if (key == ERR || key == 'X' || key == 'S') {
-			*save = (key == 's');
+			*save = (key == 'S');
 			break;
 		}
 
