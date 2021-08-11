@@ -10,6 +10,9 @@
 
 #include "utils.h"
 
+#define MAX_WIDTH  80
+#define MAX_HEIGHT 30
+
 struct screen *screen_new(const char *title)
 {
 	struct screen *screen = malloc(sizeof(*screen));
@@ -100,14 +103,23 @@ static void adjust_viewport(struct screen *screen, int available_height)
 void screen_draw(struct screen *screen, WINDOW *window)
 {
 	int i;
+	const int term_height = getmaxy(stdscr);
+	const int term_width = getmaxx(stdscr);
+	const int h = (term_height > MAX_HEIGHT ? MAX_HEIGHT : term_height);
+	const int w = (term_width > MAX_WIDTH ? MAX_WIDTH : term_width);
 	/* Minus borders and padding */
-	const int available_height = getmaxy(window) - 4;
+	const int available_height = h - 4;
 
-	adjust_viewport(screen, available_height);
+	/* Limit maximum size and center working area */
+	wresize(window, h, w);
+	mvwin(window, (term_height - h)/2, (term_width - w)/2);
 
+	werase(stdscr);
 	werase(window);
 	box(window, ACS_VLINE, ACS_HLINE);
 	mvwprintw(window, 0, 2, " %s ", screen->title);
+
+	adjust_viewport(screen, available_height);
 
 	for (i = 0; i < available_height; ++i) {
 		const int item = screen->top + i;
@@ -131,7 +143,9 @@ void screen_draw(struct screen *screen, WINDOW *window)
 		}
 	}
 
-	wrefresh(window);
+	wnoutrefresh(stdscr);
+	wnoutrefresh(window);
+	doupdate();
 }
 
 int screen_run(struct screen *screen, WINDOW *window)
