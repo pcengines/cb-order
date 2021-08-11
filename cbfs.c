@@ -111,7 +111,7 @@ static bool pad_file(FILE *file)
 	fseek(file, 0, SEEK_END);
 
 	size = ftell(file);
-	if (size > target_size - strlen(pad_message)) {
+	if (size > target_size - (long)strlen(pad_message)) {
 		fprintf(stderr,
 			"Boot file is greater than 4096 bytes: %ld", size);
 		return false;

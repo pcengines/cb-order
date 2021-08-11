@@ -83,7 +83,7 @@ static bool batch_reorder(const struct args *args, struct boot_data *boot)
 
 static bool set_option(struct option *option, const char *str_value)
 {
-	int int_value;
+	int int_value = 0;
 	const struct option_def *option_def = &OPTIONS[option->id];
 
 	switch (option_def->type) {
@@ -117,7 +117,7 @@ static bool batch_set_options(const struct args *args, struct boot_data *boot)
 
 	for (i = 0; i < args->boot_option_count; ++i) {
 		int n;
-		size_t j;
+		int j;
 
 		char *name = NULL;
 		char *value = NULL;
@@ -139,7 +139,7 @@ static bool batch_set_options(const struct args *args, struct boot_data *boot)
 			}
 		}
 
-		if (j == ARRAY_SIZE(OPTIONS)) {
+		if (j == boot->option_count) {
 			fprintf(stderr, "Unrecognized option: %s\n", name);
 			free(name);
 			break;

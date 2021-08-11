@@ -67,6 +67,9 @@ static void fill_options_screen(struct screen *screen, struct boot_data *boot)
 
 static void completion_display_matches_hook(char **matches, int start, int end)
 {
+	(void)matches;
+	(void)start;
+	(void)end;
 	/* Do nothing. */
 }
 

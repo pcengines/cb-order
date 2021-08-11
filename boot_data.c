@@ -59,7 +59,6 @@ static void boot_data_parse_option(struct boot_data *boot, const char *line)
 		const char *option_line = line;
 
 		int base;
-		int value;
 
 		if (!skip_prefix(&option_line, option_def->keyword))
 			continue;
