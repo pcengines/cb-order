@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "app.h"
 #include "boot_data.h"
 #include "ui_screen.h"
 #include "utils.h"
@@ -151,8 +152,9 @@ static void toggle_option(struct option *option, WINDOW *window)
 		return;
 	}
 
-	title = format_str("coreboot configuration :: options :: %s",
-			    option_def->description);
+	title = format_str("%s :: options :: %s",
+			   APP_TITLE,
+			   option_def->description);
 	input = get_input(window, title,
 			  "Range: [0; 65535]", "New value: ", "");
 	free(title);

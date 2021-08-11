@@ -6,6 +6,7 @@
 
 #include <stdlib.h>
 
+#include "app.h"
 #include "boot_data.h"
 #include "ui_screen.h"
 #include "utils.h"
@@ -28,8 +29,11 @@ static void fill_records_screen(struct screen *screen, struct boot_data *boot)
 void records_run(WINDOW *window, struct boot_data *boot)
 {
 	struct screen *screen;
+	char *title;
 
-	screen = screen_new("coreboot configuration :: boot order");
+	title = format_str("%s :: boot order", APP_TITLE);
+	screen = screen_new(title);
+	free(title);
 
 	fill_records_screen(screen, boot);
 

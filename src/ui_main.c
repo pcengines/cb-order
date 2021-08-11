@@ -4,6 +4,7 @@
 
 #include <curses.h>
 
+#include "app.h"
 #include "boot_data.h"
 #include "ui_options.h"
 #include "ui_records.h"
@@ -18,7 +19,7 @@ void main_run(WINDOW *window,
 	struct screen *screen;
 	char *title;
 
-	title = format_str("coreboot configuration :: %s", rom_file);
+	title = format_str("%s :: %s", APP_TITLE, rom_file);
 	screen = screen_new(title);
 	free(title);
 
