@@ -13,16 +13,23 @@
 #define BOOTORDER_DEF    "bootorder_def"
 #define BOOTORDER_MAP    "bootorder_map"
 
-static FILE *extract_file(const char *rom_file, const char *name)
+static FILE *extract(const char *rom_file, const char *name, bool is_region)
 {
 	FILE *file;
 	char template[] = "/tmp/cb-order.XXXXXX";
-	char *argv[] = {
+	char *file_argv[] = {
 		"cbfstool", (char *)rom_file, "extract",
 		"-n", (char *)name,
 		"-f", template,
 		NULL
 	};
+	char *region_argv[] = {
+		"cbfstool", (char *)rom_file, "read",
+		"-r", (char *)name,
+		"-f", template,
+		NULL
+	};
+	char **argv = (is_region ? region_argv : file_argv);
 
 	file = temp_file(template);
 	if (file == NULL) {
@@ -52,10 +59,10 @@ struct boot_data *cbfs_load_boot_data(const char *rom_file)
 	FILE *map_file;
 	struct boot_data *boot;
 
-	boot_file = extract_file(rom_file, BOOTORDER_DEF);
+	boot_file = extract(rom_file, BOOTORDER_REGION, /*is_region=*/true);
 	if (boot_file == NULL)
 		return NULL;
-	map_file = extract_file(rom_file, BOOTORDER_MAP);
+	map_file = extract(rom_file, BOOTORDER_MAP, /*is_region=*/false);
 	if (map_file == NULL) {
 		(void)fclose(boot_file);
 		return NULL;
