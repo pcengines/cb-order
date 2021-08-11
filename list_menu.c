@@ -20,6 +20,7 @@ struct list_menu *list_menu_new(const char *title)
 
 	menu->item_count = 0;
 	menu->items = NULL;
+	menu->top = 0;
 	menu->current = 0;
 
 	return menu;
@@ -63,21 +64,40 @@ void list_menu_goto(struct list_menu *menu, int index)
 		menu->current = index;
 }
 
+static void adjust_viewport(struct list_menu *menu, int available_height)
+{
+	if (available_height >= menu->item_count)
+		menu->top = 0;
+	else if (menu->current < menu->top)
+		menu->top = menu->current;
+	else if (menu->current >= menu->top + available_height)
+		menu->top = menu->current - available_height + 1;
+}
+
 void list_menu_draw(struct list_menu *menu, WINDOW *window)
 {
 	int i;
+	/* Minus borders and padding */
+	const int available_height = getmaxy(window) - 4;
+
+	adjust_viewport(menu, available_height);
 
 	werase(window);
 	box(window, ACS_VLINE, ACS_HLINE);
 	mvwprintw(window, 0, 2, " %s ", menu->title);
 
-	for (i = 0; i < menu->item_count; ++i) {
-		if (i == menu->current)
+	for (i = 0; i < available_height; ++i) {
+		const int item = menu->top + i;
+
+		if (item >= menu->item_count)
+			break;
+
+		if (item == menu->current)
 			wattron(window, A_REVERSE);
 
-		mvwprintw(window, 2 + i, 2, " %s ", menu->items[i]);
+		mvwprintw(window, 2 + i, 2, " %s ", menu->items[item]);
 
-		if (i == menu->current)
+		if (item == menu->current)
 			wattroff(window, A_REVERSE);
 	}
 

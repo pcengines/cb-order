@@ -12,6 +12,7 @@ struct list_menu
 	int item_count;
 	char **items;
 
+	int top;
 	int current;
 };
 
