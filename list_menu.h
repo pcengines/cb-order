@@ -23,7 +23,7 @@ struct list_menu *list_menu_new(const char *title);
 void list_menu_free(struct list_menu *menu);
 
 void list_menu_add_item(struct list_menu *menu, const char *item);
-void list_menu_clear(struct list_menu *menu);
+void list_menu_clear_items(struct list_menu *menu);
 
 void list_menu_add_hint(struct list_menu *menu, const char *hint);
 

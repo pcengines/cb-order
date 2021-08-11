@@ -34,7 +34,7 @@ void list_menu_free(struct list_menu *menu)
 {
 	int i;
 
-	list_menu_clear(menu);
+	list_menu_clear_items(menu);
 
 	for (i = 0; i < menu->hint_count; ++i)
 		free(menu->hints[i]);
@@ -55,7 +55,7 @@ void list_menu_add_item(struct list_menu *menu, const char *item)
 		++menu->item_count;
 }
 
-void list_menu_clear(struct list_menu *menu)
+void list_menu_clear_items(struct list_menu *menu)
 {
 	int i;
 

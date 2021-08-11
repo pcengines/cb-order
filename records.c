@@ -12,7 +12,7 @@ static void make_records_menu(struct list_menu *menu, struct boot_data *boot)
 {
 	int i;
 
-	list_menu_clear(menu);
+	list_menu_clear_items(menu);
 
 	for (i = 0; i < boot->record_count; ++i) {
 		char *item = format_str("(%c)  %s",
