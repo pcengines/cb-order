@@ -11,7 +11,7 @@
 #include <string.h>
 
 #include "boot_data.h"
-#include "list_menu.h"
+#include "ui_screen.h"
 #include "utils.h"
 
 static struct
@@ -52,15 +52,15 @@ static char *format_option_item(struct option *option)
 	return line;
 }
 
-static void make_options_menu(struct list_menu *menu, struct boot_data *boot)
+static void fill_options_screen(struct screen *screen, struct boot_data *boot)
 {
 	int i;
 
-	list_menu_clear_items(menu);
+	screen_clear_items(screen);
 
 	for (i = 0; i < boot->option_count; ++i) {
 		char *item = format_option_item(&boot->options[i]);
-		list_menu_add_item(menu, item);
+		screen_add_item(screen, item);
 		free(item);
 	}
 }
@@ -179,35 +179,30 @@ static void toggle_option(struct option *option, WINDOW *window)
 	free(input);
 }
 
-void options_menu_run(WINDOW *menu_window, struct boot_data *boot)
+void options_run(WINDOW *window, struct boot_data *boot)
 {
-	struct list_menu *options_menu;
+	struct screen *screen;
 
-	options_menu = list_menu_new("coreboot configuration :: options");
-	make_options_menu(options_menu, boot);
+	screen = screen_new("coreboot configuration :: options");
+	fill_options_screen(screen, boot);
 
-	list_menu_add_hint(options_menu,
-			   "Down/j, Up/k             move cursor");
-	list_menu_add_hint(options_menu,
-			   "Home/g, End              move cursor");
-	list_menu_add_hint(options_menu,
-			   "Space/Enter/Right/l/(_)  toggle/set option");
-	list_menu_add_hint(options_menu,
-			   "Backspace/Left/q/h       leave menu");
+	screen_add_hint(screen, "Down/j, Up/k             move cursor");
+	screen_add_hint(screen, "Home/g, End              move cursor");
+	screen_add_hint(screen, "Space/Enter/Right/l/(_)  toggle/set option");
+	screen_add_hint(screen, "Backspace/Left/q/h       leave");
 
 	while (true) {
 		int i;
 
-		const int key = list_menu_run(options_menu, menu_window);
+		const int key = screen_run(screen, window);
 		if (key == ERR || key == 'q' || key == 'h' || key == KEY_LEFT ||
 		    key == KEY_BACKSPACE || key == '\b')
 			break;
 
 		if (key == ' ' || key == '\n' || key == 'l' ||
 		    key == KEY_RIGHT) {
-			toggle_option(&boot->options[options_menu->current],
-				      menu_window);
-			make_options_menu(options_menu, boot);
+			toggle_option(&boot->options[screen->current], window);
+			fill_options_screen(screen, boot);
 			continue;
 		}
 
@@ -217,15 +212,15 @@ void options_menu_run(WINDOW *menu_window, struct boot_data *boot)
 			const struct option_def *option_def = &OPTIONS[id];
 
 			if (option_def->shortcut == key) {
-				toggle_option(option, menu_window);
-				make_options_menu(options_menu, boot);
-				list_menu_goto(options_menu, i);
+				toggle_option(option, window);
+				fill_options_screen(screen, boot);
+				screen_goto(screen, i);
 				break;
 			}
 		}
 	}
 
-	list_menu_free(options_menu);
+	screen_free(screen);
 }
 
 /* vim: set ts=8 sts=8 sw=8 noet : */

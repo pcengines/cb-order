@@ -5,7 +5,7 @@
 
 struct boot_data;
 
-void options_menu_run(WINDOW *menu_window, struct boot_data *boot);
+void options_run(WINDOW *window, struct boot_data *boot);
 
 #endif // OPTIONS_H__
 

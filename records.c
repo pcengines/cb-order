@@ -5,71 +5,70 @@
 #include <stdlib.h>
 
 #include "boot_data.h"
-#include "list_menu.h"
+#include "ui_screen.h"
 #include "utils.h"
 
-static void make_records_menu(struct list_menu *menu, struct boot_data *boot)
+static void fill_records_screen(struct screen *screen, struct boot_data *boot)
 {
 	int i;
 
-	list_menu_clear_items(menu);
+	screen_clear_items(screen);
 
 	for (i = 0; i < boot->record_count; ++i) {
 		char *item = format_str("(%c)  %s",
 					'A' + i,
 					boot->records[i].name);
-		list_menu_add_item(menu, item);
+		screen_add_item(screen, item);
 		free(item);
 	}
 }
 
-void records_menu_run(WINDOW *menu_window, struct boot_data *boot)
+void records_run(WINDOW *window, struct boot_data *boot)
 {
-	struct list_menu *boot_menu;
+	struct screen *screen;
 
-	boot_menu = list_menu_new("coreboot configuration :: boot order");
+	screen = screen_new("coreboot configuration :: boot order");
 
-	make_records_menu(boot_menu, boot);
+	fill_records_screen(screen, boot);
 
-	list_menu_add_hint(boot_menu, "Down/j, Up/k        move cursor");
-	list_menu_add_hint(boot_menu, "Home/g, End         move cursor");
-	list_menu_add_hint(boot_menu, "PgDown/Ctrl+N       move record down");
-	list_menu_add_hint(boot_menu, "PgUp/Ctrl+P         move record up");
-	list_menu_add_hint(boot_menu,
-			   "(_)                 move record to current "
-			                       "position");
-	list_menu_add_hint(boot_menu, "Backspace/Left/q/h  leave menu");
+	screen_add_hint(screen, "Down/j, Up/k        move cursor");
+	screen_add_hint(screen, "Home/g, End         move cursor");
+	screen_add_hint(screen, "PgDown/Ctrl+N       move record down");
+	screen_add_hint(screen, "PgUp/Ctrl+P         move record up");
+	screen_add_hint(screen, "(_)                 move record to current "
+						    "position");
+	screen_add_hint(screen, "Backspace/Left/q/h  leave");
 
 	while (true) {
-		const int key = list_menu_run(boot_menu, menu_window);
+		const int key = screen_run(screen, window);
 		if (key == ERR || key == 'q' || key == 'h' || key == KEY_LEFT ||
 		    key == KEY_BACKSPACE || key == '\b')
 			break;
 
 		if (key >= 'A' && key < 'A' + boot->record_count) {
 			const int item = key - 'A';
-			const int line = boot_menu->current;
+			const int line = screen->current;
 
 			boot_data_move(boot, item, line);
 
-			make_records_menu(boot_menu, boot);
-			list_menu_goto(boot_menu, line + 1);
+			fill_records_screen(screen, boot);
+			screen_goto(screen, line + 1);
 		} else if (key == KEY_PPAGE || key == CONTROL('p')) {
 			boot_data_move(boot,
-				       boot_menu->current,
-				       boot_menu->current - 1);
-			make_records_menu(boot_menu, boot);
-			list_menu_goto(boot_menu, boot_menu->current - 1);
+				       screen->current,
+				       screen->current - 1);
+			fill_records_screen(screen, boot);
+			screen_goto(screen, screen->current - 1);
 		} else if (key == KEY_NPAGE || key == CONTROL('n')) {
 			boot_data_move(boot,
-				       boot_menu->current,
-				       boot_menu->current + 1);
-			make_records_menu(boot_menu, boot);
-			list_menu_goto(boot_menu, boot_menu->current + 1);
+				       screen->current,
+				       screen->current + 1);
+			fill_records_screen(screen, boot);
+			screen_goto(screen, screen->current + 1);
 		}
 	}
 
-	list_menu_free(boot_menu);
+	screen_free(screen);
 }
 
 /* vim: set ts=8 sts=8 sw=8 noet : */

@@ -5,7 +5,7 @@
 
 struct boot_data;
 
-void records_menu_run(WINDOW *menu_window, struct boot_data *boot);
+void records_run(WINDOW *window, struct boot_data *boot);
 
 #endif // RECORDS_H__
 

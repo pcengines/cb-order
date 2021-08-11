@@ -8,9 +8,9 @@
 
 #include "boot_data.h"
 #include "cbfs.h"
-#include "list_menu.h"
 #include "records.h"
 #include "options.h"
+#include "ui_screen.h"
 #include "utils.h"
 
 struct args
@@ -25,34 +25,34 @@ struct args
 static const char *USAGE_FMT = "Usage: %s [-b boot-source,...] "
 					 "[-o option=value] [-h]\n";
 
-void run_main_menu(WINDOW *menu_window,
-		   struct boot_data *boot,
-		   const char *rom_file,
-		   bool *save)
+void run_main(WINDOW *window,
+	      struct boot_data *boot,
+	      const char *rom_file,
+	      bool *save)
 {
-	struct list_menu *main_menu;
+	struct screen *screen;
 	char *title;
 
 	title = format_str("coreboot configuration :: %s", rom_file);
-	main_menu = list_menu_new(title);
+	screen = screen_new(title);
 	free(title);
 
-	list_menu_add_item(main_menu, "(B)  Edit boot order");
-	list_menu_add_item(main_menu, "(O)  Edit options");
-	list_menu_add_item(main_menu, "(S)  Save & Exit");
-	list_menu_add_item(main_menu, "(X)  Exit");
+	screen_add_item(screen, "(B)  Edit boot order");
+	screen_add_item(screen, "(O)  Edit options");
+	screen_add_item(screen, "(S)  Save & Exit");
+	screen_add_item(screen, "(X)  Exit");
 
-	list_menu_add_hint(main_menu, "Down/j, Up/k       move cursor");
-	list_menu_add_hint(main_menu, "Home/g, End        move cursor");
-	list_menu_add_hint(main_menu, "Enter/Right/l/(_)  run menu item");
+	screen_add_hint(screen, "Down/j, Up/k       move cursor");
+	screen_add_hint(screen, "Home/g, End        move cursor");
+	screen_add_hint(screen, "Enter/Right/l/(_)  run current item");
 
 	*save = false;
 
 	while (true) {
-		int key = list_menu_run(main_menu, menu_window);
+		int key = screen_run(screen, window);
 
 		if (key == '\n' || key == 'l' || key == KEY_RIGHT)
-			key = "BOSX"[main_menu->current];
+			key = "BOSX"[screen->current];
 
 		if (key == ERR || key == 'X' || key == 'S') {
 			*save = (key == 's');
@@ -61,34 +61,34 @@ void run_main_menu(WINDOW *menu_window,
 
 		switch (key) {
 			case 'B':
-				list_menu_goto(main_menu, 0);
-				records_menu_run(menu_window, boot);
+				screen_goto(screen, 0);
+				records_run(window, boot);
 				break;
 			case 'O':
-				list_menu_goto(main_menu, 1);
-				options_menu_run(menu_window, boot);
+				screen_goto(screen, 1);
+				options_run(window, boot);
 				break;
 		}
 	}
 
-	list_menu_free(main_menu);
+	screen_free(screen);
 }
 
 static bool run_ui(const char *rom_file, struct boot_data *boot)
 {
-	WINDOW *menu_window;
+	WINDOW *window;
 	bool save;
 
 	initscr();
 	noecho();
 	curs_set(false);
 
-	menu_window = newwin(getmaxy(stdscr), getmaxx(stdscr), 0, 0);
-	keypad(menu_window, true);
+	window = newwin(getmaxy(stdscr), getmaxx(stdscr), 0, 0);
+	keypad(window, true);
 
-	run_main_menu(menu_window, boot, rom_file, &save);
+	run_main(window, boot, rom_file, &save);
 
-	delwin(menu_window);
+	delwin(window);
 
 	endwin();
 
