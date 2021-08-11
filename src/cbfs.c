@@ -15,18 +15,21 @@
 #define BOOTORDER_DEF    "bootorder_def"
 #define BOOTORDER_MAP    "bootorder_map"
 
-static FILE *extract(const char *rom_file, const char *name, bool is_region)
+static FILE *extract(const char *cbfs_tool,
+		     const char *rom_file,
+		     const char *name,
+		     bool is_region)
 {
 	FILE *file;
 	char template[] = "/tmp/cb-order.XXXXXX";
 	char *file_argv[] = {
-		"cbfstool", (char *)rom_file, "extract",
+		(char *)cbfs_tool, (char *)rom_file, "extract",
 		"-n", (char *)name,
 		"-f", template,
 		NULL
 	};
 	char *region_argv[] = {
-		"cbfstool", (char *)rom_file, "read",
+		(char *)cbfs_tool, (char *)rom_file, "read",
 		"-r", (char *)name,
 		"-f", template,
 		NULL
@@ -55,16 +58,23 @@ static FILE *extract(const char *rom_file, const char *name, bool is_region)
 	return file;
 }
 
-struct boot_data *cbfs_load_boot_data(const char *rom_file)
+struct boot_data *cbfs_load_boot_data(const char *cbfs_tool,
+				      const char *rom_file)
 {
 	FILE *boot_file;
 	FILE *map_file;
 	struct boot_data *boot;
 
-	boot_file = extract(rom_file, BOOTORDER_REGION, /*is_region=*/true);
+	boot_file = extract(cbfs_tool,
+			    rom_file,
+			    BOOTORDER_REGION,
+			    /*is_region=*/true);
 	if (boot_file == NULL)
 		return NULL;
-	map_file = extract(rom_file, BOOTORDER_MAP, /*is_region=*/false);
+	map_file = extract(cbfs_tool,
+			   rom_file,
+			   BOOTORDER_MAP,
+			   /*is_region=*/false);
 	if (map_file == NULL) {
 		(void)fclose(boot_file);
 		return NULL;
@@ -128,14 +138,16 @@ static bool pad_file(FILE *file)
 	return true;
 }
 
-bool cbfs_store_boot_data(struct boot_data *boot, const char *rom_file)
+bool cbfs_store_boot_data(const char *cbfs_tool,
+			  struct boot_data *boot,
+			  const char *rom_file)
 {
 	FILE *file;
 	bool success;
 	char template[] = "/tmp/cb-order.XXXXXX";
 	char name[128] = BOOTORDER_DEF;
 	char *add_argv[] = {
-		"cbfstool", (char *)rom_file, "add",
+		(char *)cbfs_tool, (char *)rom_file, "add",
 		"-t", "raw",
 		"-n", name,
 		"-a", "0x1000",
@@ -143,12 +155,12 @@ bool cbfs_store_boot_data(struct boot_data *boot, const char *rom_file)
 		NULL
 	};
 	char *remove_argv[] = {
-		"cbfstool", (char *)rom_file, "remove",
+		(char *)cbfs_tool, (char *)rom_file, "remove",
 		"-n", name,
 		NULL
 	};
 	char *bootorder_argv[] = {
-		"cbfstool", (char *)rom_file, "write",
+		(char *)cbfs_tool, (char *)rom_file, "write",
 		"-r", BOOTORDER_REGION,
 		"-f", template,
 		NULL

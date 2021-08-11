@@ -15,6 +15,7 @@
 
 struct args
 {
+	const char *cbfs_tool;
 	const char *rom_file;
 	const char *boot_order;
 	const char **boot_options;
@@ -22,10 +23,13 @@ struct args
 	bool interactive;
 };
 
-static const char *USAGE_FMT = "Usage: %s [-b boot-source,...] "
-					 "[-o option=value] [-h]\n";
+static const char *USAGE_FMT = "Usage: %s [-c cbfstool-path] "
+					 "[-b boot-source,...] "
+					 "[-o option=value] "
+					 "[-h] "
+					 "coreboot.rom\n";
 
-static bool run_ui(const char *rom_file, struct boot_data *boot)
+static bool run_ui(const struct args *args, struct boot_data *boot)
 {
 	WINDOW *window;
 	bool save;
@@ -37,7 +41,7 @@ static bool run_ui(const char *rom_file, struct boot_data *boot)
 	window = newwin(getmaxy(stdscr), getmaxx(stdscr), 0, 0);
 	keypad(window, true);
 
-	main_run(window, boot, rom_file, &save);
+	main_run(window, boot, args->rom_file, &save);
 
 	delwin(window);
 
@@ -45,7 +49,9 @@ static bool run_ui(const char *rom_file, struct boot_data *boot)
 
 	/* Saving is performed after UI is turned off */
 	if (save)
-		return cbfs_store_boot_data(boot, rom_file);
+		return cbfs_store_boot_data(args->cbfs_tool,
+					    boot,
+					    args->rom_file);
 
 	return true;
 }
@@ -166,7 +172,7 @@ static bool run_batch(const struct args *args, struct boot_data *boot)
 {
 	return batch_reorder(args, boot) &&
 	       batch_set_options(args, boot) &&
-	       cbfs_store_boot_data(boot, args->rom_file);
+	       cbfs_store_boot_data(args->cbfs_tool, boot, args->rom_file);
 }
 
 static void print_help(const char *command)
@@ -201,16 +207,19 @@ static void print_help(const char *command)
 
 static const struct args *parse_args(int argc, char **argv)
 {
-	static struct args args;
+	static struct args args = { .cbfs_tool = "cbfstool" };
 
 	int opt;
 
-	while ((opt = getopt(argc, argv, "-hb:o:")) != -1) {
+	while ((opt = getopt(argc, argv, "-hb:c:o:")) != -1) {
 		switch (opt) {
 			const char **option;
 
 			case 'b':
 				args.boot_order = optarg;
+				break;
+			case 'c':
+				args.cbfs_tool = optarg;
 				break;
 			case 'h':
 				print_help(argv[0]);
@@ -241,6 +250,7 @@ static const struct args *parse_args(int argc, char **argv)
 	}
 
 	if (args.rom_file == NULL) {
+		fprintf(stderr, "ROM-file is missing from command line\n");
 		fprintf(stderr, USAGE_FMT, argv[0]);
 		exit(EXIT_FAILURE);
 	}
@@ -258,14 +268,14 @@ int main(int argc, char **argv)
 
 	const struct args *args = parse_args(argc, argv);
 
-	boot = cbfs_load_boot_data(args->rom_file);
+	boot = cbfs_load_boot_data(args->cbfs_tool, args->rom_file);
 	if (boot == NULL) {
 		fprintf(stderr, "Failed to read boot data\n");
 		return EXIT_FAILURE;
 	}
 
 	if (args->interactive)
-		success = run_ui(args->rom_file, boot);
+		success = run_ui(args, boot);
 	else
 		success = run_batch(args, boot);
 
