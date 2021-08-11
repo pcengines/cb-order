@@ -2,8 +2,10 @@ CFLAGS := -Wall -Wextra -MMD -O3
 LDFLAGS := -lcurses -lreadline
 
 PRG := sortbootorder
+
 SRC := cbfs.c boot_data.c main.c utils.c ui_screen.c ui_options.c ui_main.c \
        ui_records.c
+SRC := $(addprefix src/,$(SRC))
 
 OBJ := $(SRC:.c=.o)
 DEP := $(SRC:.c=.d)
