@@ -5,9 +5,6 @@
 #include <curses.h>
 #include <readline/readline.h>
 
-#include <fcntl.h>
-#include <unistd.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -106,27 +103,7 @@ static int prompt_startup(void)
 
 static int prompt_input_available(void)
 {
-	int c;
-	int tty;
-	int flags;
-
-	tty = fileno(rl_instream);
-
-	/* Make reading non-blocking */
-	flags = fcntl(tty, F_GETFL, 0);
-	fcntl(tty, F_SETFL, flags | O_NONBLOCK);
-
-	/* Check whether there is more input */
-	c = fgetc(rl_instream);
-	if (c == EOF)
-		clearerr(rl_instream);
-	else
-		ungetc(c, rl_instream);
-
-	/* Make reading blocking again */
-	fcntl(tty, F_SETFL, flags);
-
-	return (c != EOF);
+	return is_input_available(rl_instream);
 }
 
 static char *get_input(WINDOW *window,
