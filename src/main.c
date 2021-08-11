@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "app.h"
 #include "boot_data.h"
 #include "cbfs.h"
 #include "ui_main.h"
@@ -27,6 +28,7 @@ static const char *USAGE_FMT = "Usage: %s [-c cbfstool-path] "
 					 "[-b boot-source,...] "
 					 "[-o option=value] "
 					 "[-h] "
+					 "[-v] "
 					 "coreboot.rom\n";
 
 static bool run_ui(const struct args *args, struct boot_data *boot)
@@ -211,7 +213,7 @@ static const struct args *parse_args(int argc, char **argv)
 
 	int opt;
 
-	while ((opt = getopt(argc, argv, "-hb:c:o:")) != -1) {
+	while ((opt = getopt(argc, argv, "-hvb:c:o:")) != -1) {
 		switch (opt) {
 			const char **option;
 
@@ -223,6 +225,10 @@ static const struct args *parse_args(int argc, char **argv)
 				break;
 			case 'h':
 				print_help(argv[0]);
+				exit(EXIT_SUCCESS);
+			case 'v':
+				fprintf(stderr, "%s v%s\n",
+					APP_NAME, APP_VERSION);
 				exit(EXIT_SUCCESS);
 			case 'o':
 				option = GROW_ARRAY(args.boot_options,
