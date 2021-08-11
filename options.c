@@ -190,10 +190,12 @@ void options_menu_run(WINDOW *menu_window, struct boot_data *boot)
 		int i;
 
 		const int key = list_menu_run(options_menu, menu_window);
-		if (key == ERR || key == 'q' || key == 'h')
+		if (key == ERR || key == 'q' || key == 'h' || key == KEY_LEFT ||
+		    key == KEY_BACKSPACE || key == '\b')
 			break;
 
-		if (key == ' ' || key == '\n' || key == 'l') {
+		if (key == ' ' || key == '\n' || key == 'l' ||
+		    key == KEY_RIGHT) {
 			toggle_option(&boot->options[options_menu->current],
 				      menu_window);
 			make_options_menu(options_menu, boot);

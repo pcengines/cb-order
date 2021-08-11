@@ -47,7 +47,7 @@ void run_main_menu(WINDOW *menu_window,
 	while (true) {
 		int key = list_menu_run(main_menu, menu_window);
 
-		if (key == '\n' || key == 'l')
+		if (key == '\n' || key == 'l' || key == KEY_RIGHT)
 			key = "BOSX"[main_menu->current];
 
 		if (key == ERR || key == 'X' || key == 'S') {

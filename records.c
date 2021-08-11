@@ -33,7 +33,8 @@ void records_menu_run(WINDOW *menu_window, struct boot_data *boot)
 
 	while (true) {
 		const int key = list_menu_run(boot_menu, menu_window);
-		if (key == ERR || key == 'q' || key == 'h')
+		if (key == ERR || key == 'q' || key == 'h' || key == KEY_LEFT ||
+		    key == KEY_BACKSPACE || key == '\b')
 			break;
 
 		if (key >= 'A' && key < 'A' + boot->record_count) {
