@@ -8,8 +8,8 @@
 
 #include "boot_data.h"
 #include "cbfs.h"
-#include "records.h"
-#include "options.h"
+#include "ui_options.h"
+#include "ui_records.h"
 #include "ui_screen.h"
 #include "utils.h"
 

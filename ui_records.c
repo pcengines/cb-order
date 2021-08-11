@@ -1,4 +1,4 @@
-#include "records.h"
+#include "ui_records.h"
 
 #include <curses.h>
 

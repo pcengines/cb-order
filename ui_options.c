@@ -1,4 +1,4 @@
-#include "options.h"
+#include "ui_options.h"
 
 #include <curses.h>
 #include <readline/readline.h>
