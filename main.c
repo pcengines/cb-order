@@ -42,6 +42,10 @@ void run_main_menu(WINDOW *menu_window,
 	list_menu_add_item(main_menu, "(S)  Save & Exit");
 	list_menu_add_item(main_menu, "(X)  Exit");
 
+	list_menu_add_hint(main_menu, "Down/j, Up/k       move cursor");
+	list_menu_add_hint(main_menu, "Home/g, End        move cursor");
+	list_menu_add_hint(main_menu, "Enter/Right/l/(_)  run menu item");
+
 	*save = false;
 
 	while (true) {

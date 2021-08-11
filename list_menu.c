@@ -20,6 +20,10 @@ struct list_menu *list_menu_new(const char *title)
 
 	menu->item_count = 0;
 	menu->items = NULL;
+
+	menu->hint_count = 0;
+	menu->hints = NULL;
+
 	menu->top = 0;
 	menu->current = 0;
 
@@ -28,7 +32,13 @@ struct list_menu *list_menu_new(const char *title)
 
 void list_menu_free(struct list_menu *menu)
 {
+	int i;
+
 	list_menu_clear(menu);
+
+	for (i = 0; i < menu->hint_count; ++i)
+		free(menu->hints[i]);
+	free(menu->hints);
 
 	free(menu->title);
 	free(menu);
@@ -56,6 +66,17 @@ void list_menu_clear(struct list_menu *menu)
 
 	menu->items = NULL;
 	menu->item_count = 0;
+}
+
+void list_menu_add_hint(struct list_menu *menu, const char *hint)
+{
+	char **new_item = GROW_ARRAY(menu->hints, menu->hint_count);
+	if (new_item == NULL)
+		return;
+
+	*new_item = strdup(hint);
+	if (*new_item != NULL)
+		++menu->hint_count;
 }
 
 void list_menu_goto(struct list_menu *menu, int index)
@@ -99,6 +120,13 @@ void list_menu_draw(struct list_menu *menu, WINDOW *window)
 
 		if (item == menu->current)
 			wattroff(window, A_REVERSE);
+	}
+
+	if (available_height >= menu->item_count + 1 + menu->hint_count) {
+		for (i = 0; i < menu->hint_count; ++i) {
+			const int line = 2 + menu->item_count + 1 + i;
+			mvwprintw(window, line, 2, " %s ", menu->hints[i]);
+		}
 	}
 
 	wrefresh(window);

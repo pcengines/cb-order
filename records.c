@@ -31,6 +31,15 @@ void records_menu_run(WINDOW *menu_window, struct boot_data *boot)
 
 	make_records_menu(boot_menu, boot);
 
+	list_menu_add_hint(boot_menu, "Down/j, Up/k        move cursor");
+	list_menu_add_hint(boot_menu, "Home/g, End         move cursor");
+	list_menu_add_hint(boot_menu, "PgDown/Ctrl+N       move record down");
+	list_menu_add_hint(boot_menu, "PgUp/Ctrl+P         move record up");
+	list_menu_add_hint(boot_menu,
+			   "(_)                 move record to current "
+			                       "position");
+	list_menu_add_hint(boot_menu, "Backspace/Left/q/h  leave menu");
+
 	while (true) {
 		const int key = list_menu_run(boot_menu, menu_window);
 		if (key == ERR || key == 'q' || key == 'h' || key == KEY_LEFT ||

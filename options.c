@@ -186,6 +186,15 @@ void options_menu_run(WINDOW *menu_window, struct boot_data *boot)
 	options_menu = list_menu_new("coreboot configuration :: options");
 	make_options_menu(options_menu, boot);
 
+	list_menu_add_hint(options_menu,
+			   "Down/j, Up/k             move cursor");
+	list_menu_add_hint(options_menu,
+			   "Home/g, End              move cursor");
+	list_menu_add_hint(options_menu,
+			   "Space/Enter/Right/l/(_)  toggle/set option");
+	list_menu_add_hint(options_menu,
+			   "Backspace/Left/q/h       leave menu");
+
 	while (true) {
 		int i;
 
