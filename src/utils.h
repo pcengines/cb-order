@@ -42,7 +42,7 @@
 	} while (false)
 
 char *format_str(const char format[], ...)
-	__attribute__ ((format(gnu_printf, 1, 2)));
+	__attribute__ ((format(printf, 1, 2)));
 
 bool skip_prefix(const char **str, const char *prefix);
 

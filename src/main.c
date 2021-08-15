@@ -129,13 +129,11 @@ static bool batch_set_options(const struct args *args, struct boot_data *boot)
 		int n;
 		int j;
 
-		char *name = NULL;
-		char *value = NULL;
+		char name[64];
+		char value[64];
 
-		n = sscanf(args->boot_options[i], "%m[^=]=%ms", &name, &value);
+		n = sscanf(args->boot_options[i], "%63[^=]=%63s", name, value);
 		if (n != 2) {
-			free(name);
-			free(value);
 			fprintf(stderr, "Unrecognized option setting: %s\n",
 				args->boot_options[i]);
 			break;
@@ -151,20 +149,15 @@ static bool batch_set_options(const struct args *args, struct boot_data *boot)
 
 		if (j == boot->option_count) {
 			fprintf(stderr, "Unrecognized option: %s\n", name);
-			free(name);
 			break;
 		}
 
 		if (!set_option(&boot->options[j], value)) {
 			fprintf(stderr, "Invalid value for %s option: %s\n",
 				name, value);
-			free(value);
-			free(name);
 			break;
 		}
 
-		free(value);
-		free(name);
 	}
 
 	return (i == args->boot_option_count);
@@ -211,9 +204,10 @@ static const struct args *parse_args(int argc, char **argv)
 {
 	static struct args args = { .cbfs_tool = "cbfstool" };
 
+	int i;
 	int opt;
 
-	while ((opt = getopt(argc, argv, "-hvb:c:o:")) != -1) {
+	while ((opt = getopt(argc, argv, "hvb:c:o:")) != -1) {
 		switch (opt) {
 			const char **option;
 
@@ -239,20 +233,21 @@ static const struct args *parse_args(int argc, char **argv)
 				}
 				break;
 
-			case 1: /* positional argument */
-				if (args.rom_file != NULL) {
-					fprintf(stderr, "Excess positional "
-							"argument: %s\n",
-						argv[optind - 1]);
-					exit(EXIT_FAILURE);
-				}
-				args.rom_file = argv[optind - 1];
-				break;
-
 			case '?': /* parsing error */
 				fprintf(stderr, USAGE_FMT, argv[0]);
 				exit(EXIT_FAILURE);
 		}
+	}
+
+	/* positional arguments */
+	for (i = optind; argv[i] != NULL; ++i) {
+		if (args.rom_file != NULL) {
+			fprintf(stderr, "Excessive positional argument: %s\n",
+				argv[i]);
+			exit(EXIT_FAILURE);
+		}
+
+		args.rom_file = argv[i];
 	}
 
 	if (args.rom_file == NULL) {
