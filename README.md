@@ -35,6 +35,13 @@ Interactively:
 sortbootorder coreboot.rom
 ```
 
+### Controls in interactive mode
+
+Navigation can be done with extended keys (arrows, etc.), CLI-like shortcuts or
+in Vim-like manner.  CLI-like shortcuts are associated with items on the screen
+and are upper case only, so hold `Shift` to perform navigation in that manner.
+Bottom of each screen provides list of keys and their meaning.
+
 ### License
 
 GPL 2.0 or later.
