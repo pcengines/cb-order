@@ -70,5 +70,3 @@ static const struct option_def OPTIONS[] =
 };
 
 #endif // BOOT_DATA_H__
-
-/* vim: set ts=8 sts=8 sw=8 noet : */

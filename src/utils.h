@@ -53,5 +53,3 @@ bool run_cmd(char **argv);
 bool is_input_available(FILE *stream);
 
 #endif // UTILS_H__
-
-/* vim: set ts=8 sts=8 sw=8 noet : */

@@ -181,5 +181,3 @@ bool is_input_available(FILE *stream)
 
 	return (c != EOF);
 }
-
-/* vim: set ts=8 sts=8 sw=8 noet : */

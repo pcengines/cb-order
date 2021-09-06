@@ -180,5 +180,3 @@ int screen_run(struct screen *screen, WINDOW *window)
 		}
 	}
 }
-
-/* vim: set ts=8 sts=8 sw=8 noet : */

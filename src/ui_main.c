@@ -59,5 +59,3 @@ void main_run(WINDOW *window,
 
 	screen_free(screen);
 }
-
-/* vim: set ts=8 sts=8 sw=8 noet : */

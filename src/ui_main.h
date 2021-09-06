@@ -13,5 +13,3 @@ void main_run(WINDOW *window,
               bool *save);
 
 #endif // UI_MAIN_H__
-
-/* vim: set ts=8 sts=8 sw=8 noet : */

@@ -34,5 +34,3 @@ void screen_draw(struct screen *screen, WINDOW *window);
 int screen_run(struct screen *screen, WINDOW *window);
 
 #endif // UI_SCREEN_H__
-
-/* vim: set ts=8 sts=8 sw=8 noet : */

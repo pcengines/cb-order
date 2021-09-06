@@ -8,5 +8,3 @@
 #define APP_VERSION  "1.0"
 
 #endif // APP_H__
-
-/* vim: set ts=8 sts=8 sw=8 noet : */

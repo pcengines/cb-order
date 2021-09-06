@@ -214,5 +214,3 @@ failure:
 	(void)unlink(template);
 	return false;
 }
-
-/* vim: set ts=8 sts=8 sw=8 noet : */

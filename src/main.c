@@ -284,5 +284,3 @@ int main(int argc, char **argv)
 
 	return (success ? EXIT_SUCCESS : EXIT_FAILURE);
 }
-
-/* vim: set ts=8 sts=8 sw=8 noet : */

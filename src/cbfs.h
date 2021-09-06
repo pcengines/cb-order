@@ -14,5 +14,3 @@ bool cbfs_store_boot_data(const char *cbfs_tool,
 			  const char *rom_file);
 
 #endif // CBFS_H__
-
-/* vim: set ts=8 sts=8 sw=8 noet : */

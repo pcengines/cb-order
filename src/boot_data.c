@@ -267,5 +267,3 @@ void boot_data_dump_map(struct boot_data *boot, FILE *file)
 				boot->records[i].name);
 	}
 }
-
-/* vim: set ts=8 sts=8 sw=8 noet : */

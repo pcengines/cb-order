@@ -16,5 +16,3 @@ X("uartc", "UART C / GPIO[0..7]", 'O', OPT_TYPE_TOGGLE)
 X("uartd", "UART D / GPIO[10..17]", 'P', OPT_TYPE_TOGGLE)
 X("usben", "USB boot", 'U', OPT_TYPE_BOOLEAN)
 X("watchdog", "Watchdog", 'I', OPT_TYPE_HEX4)
-
-/* vim: set filetype=c : */
