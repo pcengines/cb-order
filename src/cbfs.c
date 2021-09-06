@@ -12,6 +12,7 @@
 #include "utils.h"
 
 #define BOOTORDER_REGION "BOOTORDER"
+#define BOOTORDER_FILE   "bootorder"
 #define BOOTORDER_DEF    "bootorder_def"
 #define BOOTORDER_MAP    "bootorder_map"
 
@@ -64,13 +65,23 @@ struct boot_data *cbfs_load_boot_data(const char *cbfs_tool,
 	FILE *boot_file;
 	FILE *map_file;
 	struct boot_data *boot;
+	bool bootorder_region = true;
 
 	boot_file = extract(cbfs_tool,
 			    rom_file,
 			    BOOTORDER_REGION,
 			    /*is_region=*/true);
+	if (boot_file == NULL) {
+        /* Use bootorder file if corresponding region is missing. */
+		bootorder_region = false;
+		boot_file = extract(cbfs_tool,
+				    rom_file,
+				    BOOTORDER_FILE,
+				    /*is_region=*/false);
+	}
 	if (boot_file == NULL)
 		return NULL;
+
 	map_file = extract(cbfs_tool,
 			   rom_file,
 			   BOOTORDER_MAP,
@@ -80,7 +91,7 @@ struct boot_data *cbfs_load_boot_data(const char *cbfs_tool,
 		return NULL;
 	}
 
-	boot = boot_data_new(boot_file, map_file);
+	boot = boot_data_new(boot_file, map_file, bootorder_region);
 
 	fclose(boot_file);
 	fclose(map_file);
@@ -166,6 +177,8 @@ bool cbfs_store_boot_data(const char *cbfs_tool,
 		NULL
 	};
 
+	/* Create temporary file which will be reused multiple times */
+
 	file = temp_file(template);
 	if (file == NULL) {
 		fprintf(stderr,
@@ -191,8 +204,15 @@ bool cbfs_store_boot_data(const char *cbfs_tool,
 	success = pad_file(file);
 	if (!fclose_wrapper(file, template) || !success)
 		goto failure;
-	if (!run_cmd(bootorder_argv))
-		goto failure;
+
+	if (boot->bootorder_region) {
+		if (!run_cmd(bootorder_argv))
+			goto failure;
+	} else {
+		strcpy(name, BOOTORDER_FILE);
+		if (!run_cmd(remove_argv) || !run_cmd(add_argv))
+			goto failure;
+	}
 
 	/* bootorder_map */
 

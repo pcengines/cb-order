@@ -45,9 +45,14 @@ struct boot_data
 
 	int option_count;
 	struct option *options;
+
+	/* Whether we use BOOTORDER region and not a CBFS file. */
+	bool bootorder_region;
 };
 
-struct boot_data *boot_data_new(FILE *boot_file, FILE *map_file);
+struct boot_data *boot_data_new(FILE *boot_file,
+				FILE *map_file,
+				bool bootorder_region);
 void boot_data_free(struct boot_data *boot);
 
 void boot_data_move(struct boot_data *boot, int from, int to);

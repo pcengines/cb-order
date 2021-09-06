@@ -166,7 +166,9 @@ static void boot_data_parse(struct boot_data *boot,
 	free(line);
 }
 
-struct boot_data *boot_data_new(FILE *boot_file, FILE *map_file)
+struct boot_data *boot_data_new(FILE *boot_file,
+				FILE *map_file,
+				bool bootorder_region)
 {
 	size_t i;
 	struct boot_data *boot = malloc(sizeof(*boot));
@@ -175,6 +177,7 @@ struct boot_data *boot_data_new(FILE *boot_file, FILE *map_file)
 	boot->records = NULL;
 	boot->option_count = 0;
 	boot->options = NULL;
+	boot->bootorder_region = bootorder_region;
 
 	for (i = 0; i < ARRAY_SIZE(OPTIONS); ++i)
 		boot_data_add_option(boot, i, /*value=*/0);
