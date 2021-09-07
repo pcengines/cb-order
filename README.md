@@ -16,7 +16,7 @@ update ROM files.
 
 ```bash
 make # or `make debug` (possibly after `make clean`)
-./sortbootorder -h
+./cb-order -h
 ```
 
 ### Usage example
@@ -25,14 +25,14 @@ Non-interactively:
 
 ```bash
 # path to cbfstool is specified explicitly
-sortbootorder coreboot.rom -c build/cbfstool -b USB,SATA -o usben=off -o watchdog=300
+cb-order coreboot.rom -c build/cbfstool -b USB,SATA -o usben=off -o watchdog=300
 ```
 
 Interactively:
 
 ```bash
 # cbfstool is available in $PATH
-sortbootorder coreboot.rom
+cb-order coreboot.rom
 ```
 
 ### Controls in interactive mode

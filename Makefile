@@ -1,7 +1,7 @@
 CFLAGS := -I /usr/local/include -Wall -Wextra -MMD -MP -O3
 LDFLAGS := -L /usr/local/lib -lcurses -lreadline
 
-PRG := sortbootorder
+PRG := cb-order
 
 SRC := cbfs.c boot_data.c main.c utils.c ui_screen.c ui_options.c ui_main.c \
        ui_records.c
