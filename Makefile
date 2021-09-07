@@ -1,4 +1,4 @@
-CFLAGS := -I /usr/local/include -Wall -Wextra -MMD -O3
+CFLAGS := -I /usr/local/include -Wall -Wextra -MMD -MP -O3
 LDFLAGS := -L /usr/local/lib -lcurses -lreadline
 
 PRG := sortbootorder
