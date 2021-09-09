@@ -9,7 +9,6 @@ update ROM files.
 
 * `cbfstool`
 * `libcurses`
-* `libreadline`
 * `GNU Make`
 
 ### Building

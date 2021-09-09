@@ -50,6 +50,4 @@ FILE *temp_file(char *template);
 
 bool run_cmd(char **argv);
 
-bool is_input_available(FILE *stream);
-
 #endif // UTILS_H__

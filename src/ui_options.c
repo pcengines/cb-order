@@ -3,8 +3,8 @@
 #include "ui_options.h"
 
 #include <curses.h>
-#include <readline/readline.h>
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,15 +13,6 @@
 #include "boot_data.h"
 #include "ui_screen.h"
 #include "utils.h"
-
-static struct
-{
-	const char *title;
-	const char *description;
-	const char *initial;
-	WINDOW *window;
-}
-prompt_data;
 
 static char *format_option_item(struct option *option)
 {
@@ -65,75 +56,71 @@ static void fill_options_screen(struct screen *screen, struct boot_data *boot)
 	}
 }
 
-static void completion_display_matches_hook(char **matches, int start, int end)
+static char *get_number(WINDOW *window,
+			const char *title,
+			const char *description,
+			const char *prompt,
+			const char *initial)
 {
-	(void)matches;
-	(void)start;
-	(void)end;
-	/* Do nothing. */
-}
-
-static void prompt_redisplay(void)
-{
-	WINDOW *window = prompt_data.window;
-
-	werase(window);
-	box(window, ACS_VLINE, ACS_HLINE);
-	mvwprintw(window, 0, 2, " %s ", prompt_data.title);
-
-	mvwprintw(window, 2, 2,
-		  "%s%s", rl_display_prompt, rl_line_buffer);
-	mvwprintw(window, 4, 2, "%s", prompt_data.description);
-
-	wmove(window, 2, 2 + strlen(rl_display_prompt) + rl_point);
-	wrefresh(window);
-}
-
-static int prompt_startup(void)
-{
-	const size_t initial_len = strlen(prompt_data.initial);
-
-	rl_extend_line_buffer(initial_len + 1U);
-	strcpy(rl_line_buffer, prompt_data.initial);
-
-	rl_point = initial_len;
-	rl_end = initial_len;
-
-	return 0;
-}
-
-static int prompt_input_available(void)
-{
-	return is_input_available(rl_instream);
-}
-
-static char *get_input(WINDOW *window,
-		       const char *title,
-		       const char *description,
-		       const char *prompt,
-		       const char *initial)
-{
-	char *input;
+	char input_buf[128];
+	bool done = false;
+	bool accepted = false;
 	int visibility;
+	size_t pos;
 
-	prompt_data.title = title;
-	prompt_data.description = description;
-	prompt_data.initial = initial;
-	prompt_data.window = window;
-
-	rl_redisplay_function = &prompt_redisplay;
-	/* Prevent displaying completion menu, which could mess up output */
-	rl_completion_display_matches_hook = &completion_display_matches_hook;
-
-	rl_startup_hook = &prompt_startup;
-
-	rl_input_available_hook = &prompt_input_available;
+	snprintf(input_buf, sizeof(input_buf), "%s", initial);
+	pos = strlen(input_buf);
 
 	visibility = curs_set(1);
-	input = readline(prompt);
+
+	while (!done) {
+		int key;
+
+		werase(window);
+		box(window, ACS_VLINE, ACS_HLINE);
+		mvwprintw(window, 0, 2, " %s ", title);
+
+		mvwprintw(window, 2, 2,
+			  "%s%s", prompt, input_buf);
+		mvwprintw(window, 4, 2, "%s", description);
+
+		wmove(window, 2, 2 + strlen(prompt) + pos);
+		wrefresh(window);
+
+		key = wgetch(window);
+		switch (key) {
+			case '\x08': /* Ctrl+H */
+			case KEY_BACKSPACE:
+				if (pos > 0)
+					input_buf[--pos] = '\0';
+				break;
+			case '\x15': /* Ctrl+U */
+				input_buf[0] = '\0';
+				pos = 0;
+				break;
+			case '\n':
+			case KEY_ENTER:
+				done = true;
+				accepted = true;
+				break;
+			case '\x1b': /* Escape */
+				done = true;
+				break;
+			default:
+				if (isdigit(key) && pos < sizeof(input_buf)) {
+					input_buf[pos++] = key;
+					input_buf[pos] = '\0';
+				}
+				break;
+		}
+	}
+
 	curs_set(visibility);
 
-	return input;
+	if (!accepted)
+		return NULL;
+
+	return strdup(input_buf);
 }
 
 static void toggle_option(struct option *option, WINDOW *window)
@@ -155,12 +142,14 @@ static void toggle_option(struct option *option, WINDOW *window)
 	title = format_str("%s :: options :: %s",
 			   APP_TITLE,
 			   option_def->description);
-	input = get_input(window, title,
-			  "Range: [0; 65535]", "New value: ", "");
+	input = get_number(window, title,
+			   "Range: [0; 65535]", "New value: ", "");
 	free(title);
 
-	(void)boot_data_set_option(option, strtol(input, NULL, 10));
-	free(input);
+	if (input != NULL) {
+		(void)boot_data_set_option(option, strtol(input, NULL, 10));
+		free(input);
+	}
 }
 
 void options_run(WINDOW *window, struct boot_data *boot)

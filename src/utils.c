@@ -156,28 +156,3 @@ bool run_cmd(char **argv)
 
 	return (exit_code == EXIT_SUCCESS);
 }
-
-bool is_input_available(FILE *stream)
-{
-	int c;
-	int tty;
-	int flags;
-
-	tty = fileno(stream);
-
-	/* Make reading non-blocking */
-	flags = fcntl(tty, F_GETFL, 0);
-	fcntl(tty, F_SETFL, flags | O_NONBLOCK);
-
-	/* Check whether there is more input */
-	c = fgetc(stream);
-	if (c == EOF)
-		clearerr(stream);
-	else
-		ungetc(c, stream);
-
-	/* Make reading blocking again */
-	fcntl(tty, F_SETFL, flags);
-
-	return (c != EOF);
-}
