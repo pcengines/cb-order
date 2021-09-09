@@ -11,91 +11,86 @@
 #include "boot_data.h"
 #include "utils.h"
 
+#include "third-party/cbfs_image.h"
+#include "third-party/partitioned_file.h"
+
+#define CBFS_REGION      "COREBOOT"
 #define BOOTORDER_REGION "BOOTORDER"
 #define BOOTORDER_FILE   "bootorder"
 #define BOOTORDER_DEF    "bootorder_def"
 #define BOOTORDER_MAP    "bootorder_map"
 
-static FILE *extract(const char *cbfs_tool,
-		     const char *rom_file,
-		     const char *name,
-		     bool is_region)
+static FILE *read_from_rom(partitioned_file_t *pf,
+			   const char *name,
+			   bool is_region)
 {
-	FILE *file;
-	char template[] = "/tmp/cb-order.XXXXXX";
-	char *file_argv[] = {
-		(char *)cbfs_tool, (char *)rom_file, "extract",
-		"-n", (char *)name,
-		"-f", template,
-		NULL
-	};
-	char *region_argv[] = {
-		(char *)cbfs_tool, (char *)rom_file, "read",
-		"-r", (char *)name,
-		"-f", template,
-		NULL
-	};
-	char **argv = (is_region ? region_argv : file_argv);
+	FILE *fp;
+	struct cbfs_file *entry;
+	struct buffer region;
+	struct cbfs_image cbfs;
+	const char *region_name = (is_region ? name : CBFS_REGION);
 
-	file = temp_file(template);
-	if (file == NULL) {
-		fprintf(stderr,
-			"Failed to create a temporary file: %s\n",
-			strerror(errno));
+	if (!partitioned_file_read_region(&region, pf, region_name)) {
+		/* ERROR("The image will be left unmodified.\n"); */
 		return NULL;
 	}
 
-	if (!run_cmd(argv)) {
-		(void)fclose(file);
-		(void)unlink(template);
-
-		fprintf(stderr,
-			"Failed to extract %s from %s\n",
-			name, rom_file);
-		return NULL;
+	if(is_region) {
+		FILE *fp = fmemopen(NULL, region.size, "w+");
+		fwrite(region.data, 1, region.size, fp);
+		rewind(fp);
+		return fp;
 	}
 
-	(void)unlink(template);
-	return file;
+	if (cbfs_image_from_buffer(&cbfs, &region, ~0u) != 0)
+		return NULL;
+
+	entry = cbfs_get_entry(&cbfs, name);
+
+	fp = fmemopen(NULL, ntohl(entry->len), "w+");
+	fwrite(CBFS_SUBHEADER(entry), 1, ntohl(entry->len), fp);
+	rewind(fp);
+	return fp;
 }
 
-struct boot_data *cbfs_load_boot_data(const char *cbfs_tool,
-				      const char *rom_file)
+struct boot_data *cbfs_load_boot_data(const char *rom_file)
 {
 	FILE *boot_file;
 	FILE *map_file;
-	struct boot_data *boot;
+	partitioned_file_t *pf;
+	struct boot_data *boot = NULL;
 	bool bootorder_region = true;
 
-	boot_file = extract(cbfs_tool,
-			    rom_file,
-			    BOOTORDER_REGION,
-			    /*is_region=*/true);
+	pf = partitioned_file_reopen(rom_file, /*write_access=*/false);
+	if (pf == NULL) {
+		fprintf(stderr, "Failed to open ROM file for reading: %s\n",
+			rom_file);
+		goto failure;
+	}
+
+	boot_file = read_from_rom(pf, BOOTORDER_REGION, /*is_region=*/true);
 	if (boot_file == NULL) {
-        /* Use bootorder file if corresponding region is missing. */
+		/* Use bootorder file if corresponding region is missing. */
 		bootorder_region = false;
-		boot_file = extract(cbfs_tool,
-				    rom_file,
-				    BOOTORDER_FILE,
-				    /*is_region=*/false);
+		boot_file = read_from_rom(pf, BOOTORDER_FILE,
+					  /*is_region=*/false);
 	}
 	if (boot_file == NULL)
-		return NULL;
+		goto failure;
 
-	map_file = extract(cbfs_tool,
-			   rom_file,
-			   BOOTORDER_MAP,
-			   /*is_region=*/false);
+	map_file = read_from_rom(pf, BOOTORDER_MAP, /*is_region=*/false);
 	if (map_file == NULL) {
 		(void)fclose(boot_file);
-		return NULL;
+		goto failure;
 	}
 
 	boot = boot_data_new(boot_file, map_file, bootorder_region);
 
-	fclose(boot_file);
-	fclose(map_file);
+	(void)fclose(boot_file);
+	(void)fclose(map_file);
 
+failure:
+	partitioned_file_close(pf);
 	return boot;
 }
 
@@ -104,9 +99,7 @@ static FILE *fopen_wrapper(const char *path, const char *mode)
 	FILE *file = fopen(path, mode);
 
 	if (file == NULL)
-		fprintf(stderr,
-			"Failed to open file %s: %s\n",
-			path,
+		fprintf(stderr, "Failed to open file %s: %s\n", path,
 			strerror(errno));
 
 	return file;
@@ -136,7 +129,7 @@ static bool pad_file(FILE *file)
 	size = ftell(file);
 	if (size > target_size - (long)strlen(pad_message)) {
 		fprintf(stderr,
-			"Boot file is greater than 4096 bytes: %ld", size);
+			"Boot file is greater than 4096 bytes: %ld\n", size);
 		return false;
 	}
 
@@ -149,88 +142,151 @@ static bool pad_file(FILE *file)
 	return true;
 }
 
-bool cbfs_store_boot_data(const char *cbfs_tool,
-			  struct boot_data *boot,
-			  const char *rom_file)
+static off_t get_file_size(FILE *fp)
 {
-	FILE *file;
-	bool success;
-	char template[] = "/tmp/cb-order.XXXXXX";
-	char name[128] = BOOTORDER_DEF;
-	char *add_argv[] = {
-		(char *)cbfs_tool, (char *)rom_file, "add",
-		"-t", "raw",
-		"-n", name,
-		"-a", "0x1000",
-		"-f", template,
-		NULL
-	};
-	char *remove_argv[] = {
-		(char *)cbfs_tool, (char *)rom_file, "remove",
-		"-n", name,
-		NULL
-	};
-	char *bootorder_argv[] = {
-		(char *)cbfs_tool, (char *)rom_file, "write",
-		"-r", BOOTORDER_REGION,
-		"-f", template,
-		NULL
-	};
+	off_t fsize;
+	fseek(fp, 0, SEEK_END);
+	fsize = ftell(fp);
+	rewind(fp);
+	return fsize;
+}
 
-	/* Create temporary file which will be reused multiple times */
+static bool buffer_from_fp(struct buffer *buffer, FILE *fp)
+{
+	size_t nread;
+
+	off_t file_size = get_file_size(fp);
+	if (file_size < 0) {
+		fprintf(stderr, "could not determine size of a file\n");
+		(void)fclose_wrapper(fp, "<temporary>");
+		return -1;
+	}
+
+	buffer->offset = 0;
+	buffer->size = file_size;
+	buffer->name = NULL;
+	buffer->data = malloc(buffer->size);
+	assert(buffer->data);
+
+	nread = fread(buffer->data, 1, buffer->size, fp);
+	if (nread != buffer->size) {
+		fprintf(stderr, "Incomplete read of file: %lld out of %lld\n",
+			(long long)nread, (long long)buffer->size);
+		buffer_delete(buffer);
+		return false;
+	}
+
+	return true;
+}
+
+static bool update_in_rom(partitioned_file_t *pf,
+			  const char *name,
+			  bool is_region,
+			  FILE *fp)
+{
+	struct buffer region;
+	struct buffer cbfs_file;
+	struct cbfs_image cbfs;
+	struct cbfs_file *file_header;
+	const char *region_name = (is_region ? name : CBFS_REGION);
+
+	rewind(fp);
+
+	if (!partitioned_file_read_region(&region, pf, region_name)) {
+		fprintf(stderr, "Failed to read ROM's region\n");
+		return false;
+	}
+
+	if (is_region) {
+		const size_t nread = fread(region.data, 1, region.size, fp);
+		if (nread != region.size) {
+			fprintf(stderr,
+				"Incomplete read of file: %lld out of %lld\n",
+				(long long)nread, (long long)region.size);
+			return false;
+		}
+
+		return partitioned_file_write_region(pf, &region);
+	}
+
+	if (cbfs_image_from_buffer(&cbfs, &region, ~0u) != 0)
+		return false;
+
+	if (cbfs_remove_entry(&cbfs, name) != 0)
+		return false;
+
+	if (!buffer_from_fp(&cbfs_file, fp))
+		return false;
+
+	file_header =
+		cbfs_create_file_header(CBFS_TYPE_RAW, cbfs_file.size, name);
+
+	if (cbfs_add_entry(&cbfs, &cbfs_file, /*offset=*/0, file_header,
+			   /*len_align=*/0) != 0)
+		return false;
+
+	return partitioned_file_write_region(pf, &region);
+}
+
+bool cbfs_store_boot_data(struct boot_data *boot, const char *rom_file)
+{
+	FILE *file = NULL;
+	partitioned_file_t *pf = NULL;
+	char template[] = "/tmp/cb-order.XXXXXX";
+	const char *bootorder_name =
+		(boot->bootorder_region ? BOOTORDER_REGION : BOOTORDER_FILE);
+
+	/* Create temporary file which will be reused */
 
 	file = temp_file(template);
 	if (file == NULL) {
-		fprintf(stderr,
-			"Failed to create a temporary file: %s\n",
+		fprintf(stderr, "Failed to create a temporary file: %s\n",
 			strerror(errno));
-		return false;
+		goto failure;
+	}
+
+	pf = partitioned_file_reopen(rom_file, /*write_access=*/true);
+	if (pf == NULL) {
+		fprintf(stderr, "Failed to open ROM file for writing: %s\n",
+			rom_file);
+		goto failure;
 	}
 
 	/* bootorder_def */
 
 	boot_data_dump_boot(boot, file);
-	if (!fclose_wrapper(file, template))
-		goto failure;
-	if (!run_cmd(remove_argv) || !run_cmd(add_argv))
+	if (!update_in_rom(pf, BOOTORDER_DEF, /*is_region=*/false, file))
 		goto failure;
 
 	/* bootorder */
 
-	file = fopen_wrapper(template, "w");
-	if (file == NULL)
+	/* Same data, but padded */
+	if (!pad_file(file))
 		goto failure;
-	boot_data_dump_boot(boot, file);
-	success = pad_file(file);
-	if (!fclose_wrapper(file, template) || !success)
+	if (!update_in_rom(pf, bootorder_name, boot->bootorder_region, file))
 		goto failure;
-
-	if (boot->bootorder_region) {
-		if (!run_cmd(bootorder_argv))
-			goto failure;
-	} else {
-		strcpy(name, BOOTORDER_FILE);
-		if (!run_cmd(remove_argv) || !run_cmd(add_argv))
-			goto failure;
-	}
 
 	/* bootorder_map */
 
-	strcpy(name, BOOTORDER_MAP);
-
-	file = fopen_wrapper(template, "w");
-	if (file == NULL)
-		goto failure;
-	boot_data_dump_map(boot, file);
 	if (!fclose_wrapper(file, template))
 		goto failure;
-	if (!run_cmd(remove_argv) || !run_cmd(add_argv))
+	file = fopen_wrapper(template, "w+");
+	if (file == NULL)
 		goto failure;
 
-	(void)unlink(template);
+	boot_data_dump_map(boot, file);
+	if (!update_in_rom(pf, BOOTORDER_MAP, /*is_region=*/false, file))
+		goto failure;
+
+	if (!fclose_wrapper(file, template))
+		goto failure;
+	partitioned_file_close(pf);
 	return true;
 
 failure:
-	(void)unlink(template);
+	if (file != 0)
+		(void)fclose_wrapper(file, template);
+	partitioned_file_close(pf);
+	fprintf(stderr, "Updating ROM image has failed\n");
 	return false;
 }

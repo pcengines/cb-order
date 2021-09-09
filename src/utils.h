@@ -48,6 +48,4 @@ bool skip_prefix(const char **str, const char *prefix);
 
 FILE *temp_file(char *template);
 
-bool run_cmd(char **argv);
-
 #endif // UTILS_H__

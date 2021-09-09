@@ -2,12 +2,10 @@
 
 This is a terminal application for changing boot settings in ROM files of
 [coreboot][coreboot].  It can change boot order and values of
-options in interactive or automated mode.  Requires `cbfstool` to read and
-update ROM files.
+options in interactive or automated mode.
 
 ### Dependencies
 
-* `cbfstool`
 * `libcurses`
 * `GNU Make`
 
@@ -23,14 +21,12 @@ make # or `make debug` (possibly after `make clean`)
 Non-interactively:
 
 ```bash
-# path to cbfstool is specified explicitly
-cb-order coreboot.rom -c build/cbfstool -b USB,SATA -o usben=off -o watchdog=300
+cb-order coreboot.rom -b USB,SATA -o usben=off -o watchdog=300
 ```
 
 Interactively:
 
 ```bash
-# cbfstool is available in $PATH
 cb-order coreboot.rom
 ```
 
@@ -43,6 +39,6 @@ Bottom of each screen provides list of keys and their meaning.
 
 ### License
 
-GPL 2.0 or later.
+GPL 2.0 only.
 
 [coreboot]: https://www.coreboot.org/

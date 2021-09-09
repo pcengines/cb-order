@@ -16,7 +16,6 @@
 
 struct args
 {
-	const char *cbfs_tool;
 	const char *rom_file;
 	const char *boot_order;
 	const char **boot_options;
@@ -24,8 +23,7 @@ struct args
 	bool interactive;
 };
 
-static const char *USAGE_FMT = "Usage: %s [-c cbfstool-path] "
-					 "[-b boot-source,...] "
+static const char *USAGE_FMT = "Usage: %s [-b boot-source,...] "
 					 "[-o option=value] "
 					 "[-h] "
 					 "[-v] "
@@ -51,9 +49,7 @@ static bool run_ui(const struct args *args, struct boot_data *boot)
 
 	/* Saving is performed after UI is turned off */
 	if (save)
-		return cbfs_store_boot_data(args->cbfs_tool,
-					    boot,
-					    args->rom_file);
+		return cbfs_store_boot_data(boot, args->rom_file);
 
 	return true;
 }
@@ -167,7 +163,7 @@ static bool run_batch(const struct args *args, struct boot_data *boot)
 {
 	return batch_reorder(args, boot) &&
 	       batch_set_options(args, boot) &&
-	       cbfs_store_boot_data(args->cbfs_tool, boot, args->rom_file);
+	       cbfs_store_boot_data(boot, args->rom_file);
 }
 
 static void print_help(const char *command)
@@ -202,20 +198,17 @@ static void print_help(const char *command)
 
 static const struct args *parse_args(int argc, char **argv)
 {
-	static struct args args = { .cbfs_tool = "cbfstool" };
+	static struct args args;
 
 	int i;
 	int opt;
 
-	while ((opt = getopt(argc, argv, "hvb:c:o:")) != -1) {
+	while ((opt = getopt(argc, argv, "hvb:o:")) != -1) {
 		switch (opt) {
 			const char **option;
 
 			case 'b':
 				args.boot_order = optarg;
-				break;
-			case 'c':
-				args.cbfs_tool = optarg;
 				break;
 			case 'h':
 				print_help(argv[0]);
@@ -269,7 +262,7 @@ int main(int argc, char **argv)
 
 	const struct args *args = parse_args(argc, argv);
 
-	boot = cbfs_load_boot_data(args->cbfs_tool, args->rom_file);
+	boot = cbfs_load_boot_data(args->rom_file);
 	if (boot == NULL) {
 		fprintf(stderr, "Failed to read boot data\n");
 		return EXIT_FAILURE;
