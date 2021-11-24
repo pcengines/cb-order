@@ -21,6 +21,7 @@ struct option_def
 	const char *description;
 	char shortcut;
 	enum option_type type;
+	const char *toggle_options[2];
 };
 
 struct option
@@ -63,12 +64,13 @@ void boot_data_dump_map(struct boot_data *boot, FILE *file);
 
 static const struct option_def OPTIONS[] =
 {
-#define X(keyword_, description_, shortcut_, type_) \
+#define X(keyword_, description_, shortcut_, type_, ...) \
 	{ \
 		.keyword = (keyword_), \
 		.description = (description_), \
 		.shortcut = (shortcut_), \
 		.type = (type_), \
+		.toggle_options = { __VA_ARGS__ }, \
 	},
 #include "boot_options.inc"
 #undef X

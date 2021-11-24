@@ -21,12 +21,19 @@ static char *format_option_item(struct option *option)
 	char *value = NULL;
 	char *line = NULL;
 
+	const char *first = (option_def->toggle_options[0] == NULL)
+			  ? "first"
+			  : option_def->toggle_options[0];
+	const char *second = (option_def->toggle_options[1] == NULL)
+			  ? "second"
+			  : option_def->toggle_options[1];
+
 	switch (option_def->type) {
 		case OPT_TYPE_BOOLEAN:
 			value = strdup(option->value ? "on" : "off");
 			break;
 		case OPT_TYPE_TOGGLE:
-			value = strdup(option->value ? "first" : "second");
+			value = strdup(option->value ? first : second);
 			break;
 		case OPT_TYPE_HEX4:
 			value = format_str("%d", option->value);
