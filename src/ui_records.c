@@ -41,7 +41,7 @@ void records_run(WINDOW *window, struct boot_data *boot)
 	screen_add_hint(screen, "Home/g, End         move cursor");
 	screen_add_hint(screen, "PgDown/Ctrl+N       move record down");
 	screen_add_hint(screen, "PgUp/Ctrl+P         move record up");
-	screen_add_hint(screen, "(_)                 move record to current "
+	screen_add_hint(screen, "(key)               move record to current "
 						    "position");
 	screen_add_hint(screen, "Backspace/Left/q/h  leave");
 

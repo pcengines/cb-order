@@ -166,10 +166,10 @@ void options_run(WINDOW *window, struct boot_data *boot)
 	screen = screen_new("coreboot configuration :: options");
 	fill_options_screen(screen, boot);
 
-	screen_add_hint(screen, "Down/j, Up/k             move cursor");
-	screen_add_hint(screen, "Home/g, End              move cursor");
-	screen_add_hint(screen, "Space/Enter/Right/l/(_)  toggle/set option");
-	screen_add_hint(screen, "Backspace/Left/q/h       leave");
+	screen_add_hint(screen, "Down/j, Up/k               move cursor");
+	screen_add_hint(screen, "Home/g, End                move cursor");
+	screen_add_hint(screen, "Space/Enter/Right/l/(key)  toggle/set option");
+	screen_add_hint(screen, "Backspace/Left/q/h         leave");
 
 	while (true) {
 		int i;
