@@ -4,7 +4,10 @@
 #define _CBFS_SERIALIZED_H_
 
 #include <stdint.h>
-/* #include <vb2_sha.h> */
+
+#ifdef __packed
+#undef __packed
+#endif
 
 #define __packed __attribute__((packed))
 

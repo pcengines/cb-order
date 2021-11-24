@@ -13,8 +13,11 @@
 #include <inttypes.h>
 #include <limits.h>
 #include <assert.h>
+#ifdef __linux__
 #include <endian.h>
-/* #include <commonlib/bsd/sysincludes.h> */
+#else
+#include <sys/endian.h>
+#endif
 
 #include "fmap.h"
 

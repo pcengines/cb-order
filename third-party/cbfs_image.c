@@ -8,7 +8,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#ifdef __linux__
 #include <endian.h>
+#else
+#include <sys/endian.h>
+#endif
 
 #include "common.h"
 #include "cbfs_image.h"
