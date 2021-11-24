@@ -26,7 +26,6 @@ struct option_def
 
 struct option
 {
-	// TODO: maybe use a pointer to option_def
 	int id;
 	int value;
 };
