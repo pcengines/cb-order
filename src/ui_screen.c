@@ -116,6 +116,13 @@ void screen_draw(struct screen *screen, WINDOW *window)
 
 	werase(stdscr);
 	werase(window);
+	/*
+	 * Tell curses to ignore any assumptions about the state of the screen.
+	 * This is to fix UI glitches on less capable terminals.
+	 */
+	redrawwin(stdscr);
+	redrawwin(window);
+
 	box(window, ACS_VLINE, ACS_HLINE);
 	mvwprintw(window, 0, 2, " %s ", screen->title);
 
