@@ -137,7 +137,7 @@ void screen_draw(struct screen *screen, WINDOW *window)
 		/* Work around a drawing issue in minicom by finishing drawing
 		 * on the next line.  Even if something lingers there, it should
 		 * be removed by drawing a box below. */
-		mvwprintw(window, 2 + i, 2, " %s \n", screen->items[item]);
+		mvwprintw(window, 2 + i, 2, "%s\n", screen->items[item]);
 
 		if (item == screen->current)
 			wattroff(window, A_REVERSE);
@@ -146,7 +146,7 @@ void screen_draw(struct screen *screen, WINDOW *window)
 	if (available_height >= screen->item_count + 1 + screen->hint_count) {
 		for (i = 0; i < screen->hint_count; ++i) {
 			const int line = 2 + screen->item_count + 1 + i;
-			mvwprintw(window, line, 2, " %s ", screen->hints[i]);
+			mvwprintw(window, line, 2, "%s", screen->hints[i]);
 		}
 	}
 
