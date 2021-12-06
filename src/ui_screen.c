@@ -137,7 +137,7 @@ void screen_draw(struct screen *screen, WINDOW *window)
 		if (item == screen->current)
 			wattron(window, A_REVERSE);
 
-		mvwprintw(window, 2 + i, 2, " %s ", screen->items[item]);
+		mvwprintw(window, 2 + i, 2, "%s", screen->items[item]);
 
 		if (item == screen->current)
 			wattroff(window, A_REVERSE);
@@ -146,7 +146,7 @@ void screen_draw(struct screen *screen, WINDOW *window)
 	if (available_height >= screen->item_count + 1 + screen->hint_count) {
 		for (i = 0; i < screen->hint_count; ++i) {
 			const int line = 2 + screen->item_count + 1 + i;
-			mvwprintw(window, line, 2, " %s ", screen->hints[i]);
+			mvwprintw(window, line, 2, "%s", screen->hints[i]);
 		}
 	}
 
