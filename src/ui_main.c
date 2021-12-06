@@ -28,8 +28,8 @@ void main_run(WINDOW *window,
 	screen_add_item(screen, "(S)  Save & Exit");
 	screen_add_item(screen, "(X)  Exit");
 
-	screen_add_hint(screen, "Down/j, Up/k          move cursor");
-	screen_add_hint(screen, "Home/g, End           move cursor");
+	screen_add_hint(screen, "Down/j, Up/k         move cursor");
+	screen_add_hint(screen, "Home/g, End          move cursor");
 	screen_add_hint(screen, "Enter/Right/l/(key)  run current item");
 
 	*save = false;
