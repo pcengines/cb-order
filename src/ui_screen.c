@@ -123,9 +123,6 @@ void screen_draw(struct screen *screen, WINDOW *window)
 	redrawwin(stdscr);
 	redrawwin(window);
 
-	box(window, ACS_VLINE, ACS_HLINE);
-	mvwprintw(window, 0, 2, " %s ", screen->title);
-
 	adjust_viewport(screen, available_height);
 
 	for (i = 0; i < available_height; ++i) {
@@ -137,7 +134,10 @@ void screen_draw(struct screen *screen, WINDOW *window)
 		if (item == screen->current)
 			wattron(window, A_REVERSE);
 
-		mvwprintw(window, 2 + i, 2, "%s", screen->items[item]);
+		/* Work around a drawing issue in minicom by finishing drawing
+		 * on the next line.  Even if something lingers there, it should
+		 * be removed by drawing a box below. */
+		mvwprintw(window, 2 + i, 2, " %s \n", screen->items[item]);
 
 		if (item == screen->current)
 			wattroff(window, A_REVERSE);
@@ -146,9 +146,12 @@ void screen_draw(struct screen *screen, WINDOW *window)
 	if (available_height >= screen->item_count + 1 + screen->hint_count) {
 		for (i = 0; i < screen->hint_count; ++i) {
 			const int line = 2 + screen->item_count + 1 + i;
-			mvwprintw(window, line, 2, "%s", screen->hints[i]);
+			mvwprintw(window, line, 2, " %s ", screen->hints[i]);
 		}
 	}
+
+	box(window, ACS_VLINE, ACS_HLINE);
+	mvwprintw(window, 0, 2, " %s ", screen->title);
 
 	wnoutrefresh(stdscr);
 	wnoutrefresh(window);
